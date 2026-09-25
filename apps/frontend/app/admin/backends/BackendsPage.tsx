@@ -97,6 +97,12 @@ export const BackendsPage = () => {
                 <DropdownMenuButton onClick={() => onProviderSelect('openai')}>
                   {t('openai-backend')}
                 </DropdownMenuButton>
+                <DropdownMenuButton onClick={() => onProviderSelect('openrouter')}>
+                  OpenRouter
+                </DropdownMenuButton>
+                <DropdownMenuButton onClick={() => onProviderSelect('openai-compatible')}>
+                  OpenAI-compatible
+                </DropdownMenuButton>
                 <DropdownMenuButton onClick={() => onProviderSelect('anthropic')}>
                   {t('anthropic-backend')}
                 </DropdownMenuButton>{' '}
