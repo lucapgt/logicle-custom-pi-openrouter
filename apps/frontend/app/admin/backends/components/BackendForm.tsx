@@ -110,6 +110,8 @@ const BackendForm: FC<Props> = ({ backend, onSubmit, creating }) => {
   const providerType = backend.providerType
   const supportsApiKey =
     providerType === 'openai' ||
+    providerType === 'openrouter' ||
+    providerType === 'openai-compatible' ||
     providerType === 'anthropic' ||
     providerType === 'perplexity' ||
     providerType === 'google-ai-studio' ||
@@ -133,13 +135,20 @@ const BackendForm: FC<Props> = ({ backend, onSubmit, creating }) => {
           </FormItem>
         )}
       />
-      {providerType === 'logiclecloud' && (
+      {(providerType === 'logiclecloud' || providerType === 'openai-compatible') && (
         <FormField
           control={form.control}
           name="endPoint"
           render={({ field }) => (
             <FormItem label={t('api-endpoint-label')}>
-              <Input placeholder={t('api-endpoint-placeholder')} {...field} />
+              <Input
+                placeholder={
+                  providerType === 'openai-compatible'
+                    ? 'http://localhost:11434/v1'
+                    : t('api-endpoint-placeholder')
+                }
+                {...field}
+              />
             </FormItem>
           )}
         />
