@@ -59,6 +59,8 @@ export interface LlmModel {
 export const defaultTokenizerByProvider = (provider: ProviderType): TokenizerStrategy => {
   switch (provider) {
     case 'openai':
+    case 'openrouter':
+    case 'openai-compatible':
     case 'perplexity':
     case 'logiclecloud':
       return 'cl100k_base'
