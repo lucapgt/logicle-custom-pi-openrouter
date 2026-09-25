@@ -85,7 +85,7 @@ jobs:
 
       - uses: ./.github/actions/helm-oci-chart-releaser
         with:
-          name: logicle
+          name: logicle-custom-pi-openrouter-helm
           repository: ${{ github.repository_owner }}
           tag: ${{ needs.version.outputs.chart_version }}
           app_version: ${{ needs.version.outputs.image_tag }}
