@@ -1,5 +1,5 @@
 import * as dto from '@/types/dto'
-import { SharedV2ProviderOptions } from '@ai-sdk/provider'
+import { LanguageModelV3, SharedV2ProviderOptions } from '@ai-sdk/provider'
 import { JSONSchema7 } from 'json-schema'
 import { LlmModel } from '../models'
 export interface ToolUILink {
@@ -28,6 +28,8 @@ export interface ToolInvokeParams {
 
 export interface ToolFunctionContext {
   userId: string
+  assistantId?: string
+  samplingLanguageModel?: LanguageModelV3
   rootOwner?: {
     type: 'CHAT' | 'USER' | 'ASSISTANT'
     id: string
