@@ -248,7 +248,12 @@ export const AssistantForm = ({
   const latestEstimateRequestSeq = useRef(0)
 
   useEffect(() => {
-    const currentModel = environment.models.find((m) => m.id === selectedModel?.modelId)
+    const currentModel =
+      backendModels
+        .find((backend) => backend.backendId === selectedModel?.backendId)
+        ?.models.find((model) => model.id === selectedModel?.modelId) ??
+      environment.models.find((m) => m.id === selectedModel?.modelId)
+
     if (!currentModel || !selectedModel?.backendId) {
       setAssistantContextLength((current) => (current === undefined ? current : undefined))
       previousEstimateInputs.current = undefined
