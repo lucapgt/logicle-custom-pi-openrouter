@@ -1,5 +1,5 @@
 'use client'
-import { FC, createRef, useEffect, useState } from 'react'
+import { FC, createRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   DropdownMenu,
@@ -32,56 +32,25 @@ import { UserDialog } from './UserDialog'
 import { useRouter } from 'next/navigation'
 import { useEnvironment } from '@/app/context/environmentProvider'
 import { useSatellites } from '@/hooks/satellites'
+import { useTheme } from '../providers/themeContext'
 
 type Params = {
   /** Mobile has no icon rail, so the menu also links to the sections the rail offers. */
   withNavigation?: boolean
 }
 
-type ThemePreference = 'light' | 'dark' | 'system'
-
-const applyThemePreference = (preference: ThemePreference) => {
-  if (typeof window === 'undefined') return
-  const useDark =
-    preference === 'dark' ||
-    (preference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
-  document.documentElement.classList.toggle('dark', useDark)
-}
-
 const ThemeMenuButtons: FC = () => {
-  const [theme, setTheme] = useState<ThemePreference>('system')
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem('logicle-theme') as ThemePreference | null
-    const initial = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
-    setTheme(initial)
-    applyThemePreference(initial)
-
-    const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const onSystemThemeChange = () => {
-      if ((window.localStorage.getItem('logicle-theme') ?? 'system') === 'system') {
-        applyThemePreference('system')
-      }
-    }
-    media.addEventListener('change', onSystemThemeChange)
-    return () => media.removeEventListener('change', onSystemThemeChange)
-  }, [])
-
-  const choose = (next: ThemePreference) => {
-    window.localStorage.setItem('logicle-theme', next)
-    setTheme(next)
-    applyThemePreference(next)
-  }
+  const { theme, setTheme } = useTheme()
 
   return (
     <>
-      <DropdownMenuButton icon={IconSun} onClick={() => choose('light')}>
+      <DropdownMenuButton icon={IconSun} onClick={() => setTheme('light')}>
         {theme === 'light' ? 'Theme: Light ✓' : 'Theme: Light'}
       </DropdownMenuButton>
-      <DropdownMenuButton icon={IconMoon} onClick={() => choose('dark')}>
+      <DropdownMenuButton icon={IconMoon} onClick={() => setTheme('dark')}>
         {theme === 'dark' ? 'Theme: Dark ✓' : 'Theme: Dark'}
       </DropdownMenuButton>
-      <DropdownMenuButton icon={IconDeviceDesktop} onClick={() => choose('system')}>
+      <DropdownMenuButton icon={IconDeviceDesktop} onClick={() => setTheme('system')}>
         {theme === 'system' ? 'Theme: System ✓' : 'Theme: System'}
       </DropdownMenuButton>
     </>
