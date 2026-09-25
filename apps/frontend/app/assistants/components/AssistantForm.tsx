@@ -220,7 +220,12 @@ export const AssistantForm = ({
     name: 'tokenLimit',
   })
 
+  const selectedBackendModel = backendModels
+    .find((backend) => backend.backendId === selectedModel?.backendId)
+    ?.models.find((model) => model.id === selectedModel?.modelId)
+
   const llmModelCaps =
+    selectedBackendModel?.capabilities ??
     environment.models.find((m) => m.id === selectedModel?.modelId)?.capabilities ??
     llmModelNoCapabilities
 
