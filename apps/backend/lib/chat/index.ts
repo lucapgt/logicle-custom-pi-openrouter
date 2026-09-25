@@ -315,9 +315,34 @@ export class ChatAssistant {
     files: dto.AssistantFile[],
     options: Options
   ) {
-    const llmModel = llmModels.find(
-      (m) => m.id === assistantParams.model && m.provider === providerConfig.providerType
-    )
+    const llmModel =
+      llmModels.find(
+        (m) => m.id === assistantParams.model && m.provider === providerConfig.providerType
+      ) ??
+      (providerConfig.providerType === 'openrouter' ||
+      providerConfig.providerType === 'openai-compatible'
+        ? ({
+            id: assistantParams.model,
+            model: assistantParams.model,
+            name: assistantParams.model,
+            description: assistantParams.model,
+            provider: providerConfig.providerType,
+            owned_by: assistantParams.model.startsWith('anthropic/')
+              ? 'anthropic'
+              : assistantParams.model.startsWith('google/')
+              ? 'google'
+              : assistantParams.model.startsWith('meta-llama/')
+              ? 'meta'
+              : assistantParams.model.startsWith('perplexity/')
+              ? 'perplexity'
+              : 'openai',
+            context_length: 32768,
+            capabilities: {
+              vision: false,
+              function_calling: true,
+            },
+          } satisfies LlmModel)
+        : undefined)
     if (!options.user) {
       throw new Error('Authenticated user is required to build ChatAssistant')
     }
