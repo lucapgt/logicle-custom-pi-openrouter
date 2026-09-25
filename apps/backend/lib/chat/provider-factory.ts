@@ -57,14 +57,22 @@ export function createLanguageModelBasic(
           fetch,
         })
         .responses(model.model)
-    case 'openrouter':
+    case 'openrouter': {
+      const apiKey = params.provisioned ? expandEnv(params.apiKey) : params.apiKey
+      if (!apiKey) {
+        throw new Error('OpenRouter API key is missing')
+      }
       return openai
         .createOpenAI({
-          apiKey: params.provisioned ? expandEnv(params.apiKey) : params.apiKey,
+          apiKey,
           baseURL: 'https://openrouter.ai/api/v1',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
           fetch,
         })
         .chat(model.model)
+    }
     case 'openai-compatible':
       return openai
         .createOpenAI({
