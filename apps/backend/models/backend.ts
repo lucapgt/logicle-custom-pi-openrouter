@@ -127,6 +127,38 @@ const fetchJson = async (url: string, apiKey?: string) => {
   return await response.json()
 }
 
+const parseConfiguredModelIds = (value?: string): string[] =>
+  (value ?? '')
+    .split(/[\n,]/)
+    .map((id) => id.trim())
+    .filter((id, index, all) => id.length > 0 && all.indexOf(id) === index)
+
+const discoverOpenAIModels = async (backend: dto.Backend): Promise<LlmModel[]> => {
+  if (backend.providerType !== 'openai') return []
+  const key = backend.provisioned ? expandEnv(backend.apiKey) : backend.apiKey
+  const payload = (await fetchJson('https://api.openai.com/v1/models', key)) as {
+    data?: Array<{ id?: string }>
+  }
+  const staticById = new Map(
+    llmModels.filter((m) => m.provider === 'openai').map((model) => [model.id, model] as const)
+  )
+  const excludedPrefixes = [
+    'text-embedding-',
+    'dall-e-',
+    'tts-',
+    'whisper-',
+    'omni-moderation-',
+    'text-moderation-',
+    'babbage-',
+    'davinci-',
+  ]
+
+  return (payload.data ?? [])
+    .filter((m): m is { id: string } => typeof m.id === 'string' && m.id.length > 0)
+    .filter((m) => !excludedPrefixes.some((prefix) => m.id.startsWith(prefix)))
+    .map((m) => staticById.get(m.id) ?? dynamicModel(m.id, 'openai'))
+}
+
 const discoverOpenRouterModels = async (backend: dto.Backend): Promise<LlmModel[]> => {
   if (backend.providerType !== 'openrouter') return []
   const key = backend.provisioned ? expandEnv(backend.apiKey) : backend.apiKey
@@ -158,16 +190,34 @@ const discoverOpenAICompatibleModels = async (backend: dto.Backend): Promise<Llm
   if (backend.providerType !== 'openai-compatible') return []
   const key = backend.provisioned ? expandEnv(backend.apiKey ?? '') : backend.apiKey ?? ''
   const base = backend.endPoint.replace(/\/$/, '')
-  const payload = (await fetchJson(`${base}/models`, key || undefined)) as {
-    data?: Array<{ id?: string }>
+  const configuredIds = parseConfiguredModelIds(backend.modelIds)
+  let discoveredIds: string[] = []
+
+  try {
+    const payload = (await fetchJson(`${base}/models`, key || undefined)) as {
+      data?: Array<{ id?: string }>
+    }
+    discoveredIds = (payload.data ?? [])
+      .filter((m): m is { id: string } => typeof m.id === 'string' && m.id.length > 0)
+      .map((m) => m.id)
+  } catch (error) {
+    if (configuredIds.length === 0) throw error
+    logger.warn(
+      `Dynamic model discovery failed for backend "${backend.name}", using configured model IDs`,
+      error
+    )
   }
-  return (payload.data ?? [])
-    .filter((m): m is { id: string } => typeof m.id === 'string' && m.id.length > 0)
-    .map((m) => dynamicModel(m.id, 'openai-compatible'))
+
+  return [...new Set([...configuredIds, ...discoveredIds])].map((id) =>
+    dynamicModel(id, 'openai-compatible')
+  )
 }
 
 export const getModelsForBackend = async (backend: dto.Backend): Promise<LlmModel[]> => {
   try {
+    if (backend.providerType === 'openai') {
+      return await discoverOpenAIModels(backend)
+    }
     if (backend.providerType === 'openrouter') {
       return await discoverOpenRouterModels(backend)
     }
