@@ -1,8 +1,8 @@
 apiVersion: v2
-name: logicle
-description: Helm chart for deploying Logicle on Kubernetes
+name: logicle-custom-pi-openrouter-helm
+description: Helm chart for deploying logicle-custom-pi-openrouter on Kubernetes
 sources:
-  - https://github.com/logicleai/logicle
+  - https://github.com/lucapgt/logicle-custom-pi-openrouter
 
 # A chart can be either an 'application' or a 'library' chart.
 #
@@ -23,4 +23,4 @@ version: 0.1.0
 # `helm package`/`helm lint` runs: the release-chart workflow always overrides it with
 # `--app-version` derived from the triggering release tag, so it never drifts from the actual
 # published image in CI-driven releases.
-appVersion: "v0.34.1"
+appVersion: "v0.36.0-b6-custom.2"
