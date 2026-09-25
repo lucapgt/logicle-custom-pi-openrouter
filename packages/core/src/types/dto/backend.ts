@@ -27,41 +27,71 @@ const options = [
   z.object({ providerType: z.literal('mock'), name: zodName }),
 ] as const
 
-const withBackendFields = <T extends z.ZodRawShape>(shape: T) =>
+const backendOptions = [
   z.object({
-    ...shape,
+    providerType: z.literal('openai'),
+    name: zodName,
+    apiKey: zodApiKey,
     id: z.string(),
     provisioned: z.boolean(),
-  })
-
-const backendOptions = [
-  withBackendFields({ providerType: z.literal('openai'), name: zodName, apiKey: zodApiKey }),
-  withBackendFields({ providerType: z.literal('openrouter'), name: zodName, apiKey: zodApiKey }),
-  withBackendFields({
+  }),
+  z.object({
+    providerType: z.literal('openrouter'),
+    name: zodName,
+    apiKey: zodApiKey,
+    id: z.string(),
+    provisioned: z.boolean(),
+  }),
+  z.object({
     providerType: z.literal('openai-compatible'),
     name: zodName,
     apiKey: zodOptionalApiKey,
     endPoint: z.string().url(),
+    id: z.string(),
+    provisioned: z.boolean(),
   }),
-  withBackendFields({ providerType: z.literal('anthropic'), name: zodName, apiKey: zodApiKey }),
-  withBackendFields({
+  z.object({
+    providerType: z.literal('anthropic'),
+    name: zodName,
+    apiKey: zodApiKey,
+    id: z.string(),
+    provisioned: z.boolean(),
+  }),
+  z.object({
     providerType: z.literal('logiclecloud'),
     name: zodName,
     apiKey: zodApiKey,
     endPoint: z.string().url(),
+    id: z.string(),
+    provisioned: z.boolean(),
   }),
-  withBackendFields({
+  z.object({
     providerType: z.literal('gcp-vertex'),
     name: zodName,
     credentials: zodCredentials,
+    id: z.string(),
+    provisioned: z.boolean(),
   }),
-  withBackendFields({ providerType: z.literal('perplexity'), name: zodName, apiKey: zodApiKey }),
-  withBackendFields({
+  z.object({
+    providerType: z.literal('perplexity'),
+    name: zodName,
+    apiKey: zodApiKey,
+    id: z.string(),
+    provisioned: z.boolean(),
+  }),
+  z.object({
     providerType: z.literal('google-ai-studio'),
     name: zodName,
     apiKey: zodApiKey,
+    id: z.string(),
+    provisioned: z.boolean(),
   }),
-  withBackendFields({ providerType: z.literal('mock'), name: zodName }),
+  z.object({
+    providerType: z.literal('mock'),
+    name: zodName,
+    id: z.string(),
+    provisioned: z.boolean(),
+  }),
 ] as const
 
 export const backendSchema = z.discriminatedUnion('providerType', backendOptions)
@@ -70,14 +100,36 @@ export const backendSchema = z.discriminatedUnion('providerType', backendOptions
 export const insertableBackendSchema = z.discriminatedUnion('providerType', options)
   .meta({ id: 'InsertableBackend' })
 
-export const updateableBackendSchema = z.discriminatedUnion(
-  'providerType',
-  backendOptions.map((option) =>
-    option.omit({ id: true, provisioned: true }).partial().extend({
-      providerType: option.shape.providerType,
-    })
-  ) as any
-).meta({ id: 'UpdateableBackend' })
+export const updateableBackendSchema = z.discriminatedUnion('providerType', [
+  backendOptions[0].omit({ id: true, provisioned: true }).partial().extend({
+    providerType: backendOptions[0].shape.providerType,
+  }),
+  backendOptions[1].omit({ id: true, provisioned: true }).partial().extend({
+    providerType: backendOptions[1].shape.providerType,
+  }),
+  backendOptions[2].omit({ id: true, provisioned: true }).partial().extend({
+    providerType: backendOptions[2].shape.providerType,
+  }),
+  backendOptions[3].omit({ id: true, provisioned: true }).partial().extend({
+    providerType: backendOptions[3].shape.providerType,
+  }),
+  backendOptions[4].omit({ id: true, provisioned: true }).partial().extend({
+    providerType: backendOptions[4].shape.providerType,
+  }),
+  backendOptions[5].omit({ id: true, provisioned: true }).partial().extend({
+    providerType: backendOptions[5].shape.providerType,
+  }),
+  backendOptions[6].omit({ id: true, provisioned: true }).partial().extend({
+    providerType: backendOptions[6].shape.providerType,
+  }),
+  backendOptions[7].omit({ id: true, provisioned: true }).partial().extend({
+    providerType: backendOptions[7].shape.providerType,
+  }),
+  backendOptions[8].omit({ id: true, provisioned: true }).partial().extend({
+    providerType: backendOptions[8].shape.providerType,
+  }),
+])
+  .meta({ id: 'UpdateableBackend' })
 
 export type Backend = z.infer<typeof backendSchema>
 export type InsertableBackend = z.infer<typeof insertableBackendSchema>
