@@ -45,9 +45,31 @@ export interface ToolOutputMessage {
   }
 }
 
+export interface InferenceRequestMessage {
+  type: 'inference-request'
+  id: string
+  parentToolCallId: string
+  request: unknown
+}
+
+export interface InferenceResultMessage {
+  type: 'inference-result'
+  id: string
+  result: unknown
+}
+
+export interface InferenceErrorMessage {
+  type: 'inference-error'
+  id: string
+  error: string
+}
+
 export type Message =
   | RegisterMessage
   | RegisteredMessage
   | ToolCallMessage
   | ToolResultMessage
   | ToolOutputMessage
+  | InferenceRequestMessage
+  | InferenceResultMessage
+  | InferenceErrorMessage
