@@ -299,7 +299,7 @@ export const AssistantForm = ({
     tools,
   ])
 
-  const showToolsTabs = llmModelCaps.function_calling
+  const showToolsTabs = true
   const showKnowledgeTabs = llmModelCaps.knowledge ?? true
   const onKnowledgeHasWarnings = useCallback(
     (hasWarnings: boolean) =>
