@@ -103,7 +103,6 @@ If the GHCR package has not yet been made public, open the package settings on G
 ```bash
 git clone https://github.com/lucapgt/logicle-custom-pi-openrouter.git
 cd logicle-custom-pi-openrouter
-git checkout pi-openrouter
 docker build -t logicle-custom:latest .
 ```
 
@@ -115,7 +114,18 @@ docker run -d --name logicle \
   logicle-custom:latest
 ```
 
+## Kubernetes / Helm
+
+The fork also publishes a dedicated Helm package:
+
+```text
+oci://ghcr.io/lucapgt/logicle-custom-pi-openrouter-helm
+```
+
+The Helm package is intentionally separate from the Docker image package to keep the two OCI artifact types unambiguous.
+
 ## Self-Hosting
+
 
 Logicle supports Docker, Docker Compose and Kubernetes deployments.
 
