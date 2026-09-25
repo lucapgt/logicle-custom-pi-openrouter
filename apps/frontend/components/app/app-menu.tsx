@@ -76,13 +76,13 @@ const ThemeMenuButtons: FC = () => {
   return (
     <>
       <DropdownMenuButton icon={IconSun} onClick={() => choose('light')}>
-        Theme: Light{theme === 'light' ? ' ✓' : ''}
+        {theme === 'light' ? 'Theme: Light ✓' : 'Theme: Light'}
       </DropdownMenuButton>
       <DropdownMenuButton icon={IconMoon} onClick={() => choose('dark')}>
-        Theme: Dark{theme === 'dark' ? ' ✓' : ''}
+        {theme === 'dark' ? 'Theme: Dark ✓' : 'Theme: Dark'}
       </DropdownMenuButton>
       <DropdownMenuButton icon={IconDeviceDesktop} onClick={() => choose('system')}>
-        Theme: System{theme === 'system' ? ' ✓' : ''}
+        {theme === 'system' ? 'Theme: System ✓' : 'Theme: System'}
       </DropdownMenuButton>
     </>
   )
