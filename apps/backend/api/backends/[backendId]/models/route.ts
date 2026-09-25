@@ -1,6 +1,5 @@
 import { notFound, ok, operation, responseSpec, errorSpec } from '@/lib/routes'
-import { getBackend } from '@/models/backend'
-import { llmModels } from '@/lib/models'
+import { getBackend, getModelsForBackend } from '@/models/backend'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -27,10 +26,13 @@ export const GET = operation({
     if (!backend) {
       return notFound()
     }
+    const models = await getModelsForBackend(backend)
     return ok(
-      llmModels
-        .filter((m) => m.id === backend.providerType)
-        .map((m) => ({ id: m.id, name: m.name, providerType: String(backend.providerType) }))
+      models.map((m) => ({
+        id: m.id,
+        name: m.name,
+        providerType: String(backend.providerType),
+      }))
     )
   },
 })
