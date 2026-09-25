@@ -159,14 +159,16 @@ const BackendForm: FC<Props> = ({ backend, onSubmit, creating }) => {
           name="modelIds"
           render={({ field }) => (
             <FormItem label="Model IDs (optional)">
-              <Textarea
-                rows={4}
-                placeholder={'model-a\nmodel-b'}
-                {...field}
-                value={field.value ?? ''}
-              />
-              <div className="text-sm text-muted-foreground">
-                One model ID per line, or comma-separated. These are merged with models discovered from /models and are used as a fallback if discovery is unavailable.
+              <div className="space-y-2">
+                <Textarea
+                  rows={4}
+                  placeholder={'model-a\nmodel-b'}
+                  {...field}
+                  value={field.value ?? ''}
+                />
+                <div className="text-sm text-muted-foreground">
+                  One model ID per line, or comma-separated. These are merged with models discovered from /models and are used as a fallback if discovery is unavailable.
+                </div>
               </div>
             </FormItem>
           )}
