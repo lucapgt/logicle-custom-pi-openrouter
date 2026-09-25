@@ -1,11 +1,10 @@
-# Kept as "logicle-ee" so app.kubernetes.io/name (used in the Deployment's
-# immutable pod selector) stays identical to the pre-unification chart.
-# Existing "logicle-ee-$TENANT" releases can then `helm upgrade` onto this
-# chart in place, with no resource renaming/recreation.
-nameOverride: "logicle-ee"
+# Keep Kubernetes resource names aligned with the custom fork, while the
+# Helm package itself uses a distinct "-helm" suffix to avoid colliding with
+# the Docker image package in GHCR.
+nameOverride: "logicle-custom-pi-openrouter"
 
 image:
-  repository: "ghcr.io/logicleai/logicle"
+  repository: "ghcr.io/lucapgt/logicle-custom-pi-openrouter"
   tag: ""
   pullPolicy: Always
 
