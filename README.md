@@ -14,6 +14,18 @@ Logicle was created to enable companies of all sizes to adopt Generative AI with
 Our platform is built for full extensibility, allowing seamless integration with any company system CRM, legacy ERP, or custom software and compatibility with any commercial and open-source LLM provider, ensuring your company data remains free from vendor lock-in.
 
 
+## 🔧 Custom fork features
+
+This fork keeps the standard Logicle feature set and adds:
+
+- Native **OpenRouter** support with dynamic model discovery.
+- **OpenAI** dynamic model discovery while preserving known Logicle model metadata when available.
+- **OpenAI-compatible** backends with configurable endpoint, dynamic `/models` discovery, and optional manual model IDs as fallback.
+- **Pi Agent / Satellite** integration, including reverse inference and tool-use bridging.
+- Global **Light / Dark / System** theme support.
+
+More details are available in [CUSTOM_FEATURES.md](./docs/CUSTOM_FEATURES.md).
+
 ## ✨ Features
 
 - **👥 Enhanced Multi-User Access**: Streamline onboarding with multi-user support, featuring dual-level authorization for users and admins.
@@ -30,15 +42,26 @@ Our platform is built for full extensibility, allowing seamless integration with
 
 ## 🚀 Quick try
 
-To quickly start using Logicle, you can run it as a Docker container. Use the following command to pull and run the Logicle image:
+The `pi-openrouter` branch publishes a Docker image to GitHub Container Registry after the full CI pipeline succeeds.
 
 ```bash
 docker run -d --name logicle \
--p 3000:3000 \
-ghcr.io/logicleai/logicle:latest
+  -p 3000:3000 \
+  ghcr.io/lucapgt/logicle-custom-pi-openrouter:latest
 ```
 
-After running the command, access Logicle by navigating to [http://localhost:3000](http://localhost:3000) in your web browser. From there, you can create an account and start exploring its features.
+Then open [http://localhost:3000](http://localhost:3000) in your browser.
+
+If the GHCR package has not yet been made public, open the package settings on GitHub once and change its visibility to **Public**. No extra registry credentials are needed after that for public pulls.
+
+To build the fork locally instead:
+
+```bash
+git clone https://github.com/lucapgt/logicle-custom-pi-openrouter.git
+cd logicle-custom-pi-openrouter
+git checkout pi-openrouter
+docker build -t logicle-custom:latest .
+```
 
 ## Self-Hosting
 
