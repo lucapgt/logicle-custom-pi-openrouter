@@ -260,6 +260,7 @@ export class ChatAssistant {
     context: {
       userId: string
       assistantId: string
+      samplingLanguageModel?: LanguageModelV3
       rootOwner?: {
         type: 'CHAT' | 'USER' | 'ASSISTANT'
         id: string
@@ -373,6 +374,9 @@ export class ChatAssistant {
       ]
     }
     tools = await ChatAssistant.withBuiltinTools(tools, llmModel)
+    const samplingLanguageModel = ChatAssistant.createLanguageModel(providerConfig, llmModel, {
+      user: options.user,
+    })
     const computed = await ChatAssistant.computeFunctions(tools, llmModel, {
       userId: options.user,
       assistantId: assistantParams.assistantId,
@@ -381,6 +385,7 @@ export class ChatAssistant {
         : options.conversationId
         ? { type: 'CHAT', id: options.conversationId }
         : undefined,
+      samplingLanguageModel,
     })
     return new ChatAssistant(
       providerConfig,
