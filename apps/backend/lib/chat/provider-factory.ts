@@ -57,6 +57,22 @@ export function createLanguageModelBasic(
           fetch,
         })
         .responses(model.model)
+    case 'openrouter':
+      return openai
+        .createOpenAI({
+          apiKey: params.provisioned ? expandEnv(params.apiKey) : params.apiKey,
+          baseURL: 'https://openrouter.ai/api/v1',
+          fetch,
+        })
+        .chat(model.model)
+    case 'openai-compatible':
+      return openai
+        .createOpenAI({
+          apiKey: params.provisioned ? expandEnv(params.apiKey ?? '') : params.apiKey ?? '',
+          baseURL: params.endPoint.replace(/\/$/, ''),
+          fetch,
+        })
+        .chat(model.model)
     case 'anthropic':
       return anthropic
         .createAnthropic({
