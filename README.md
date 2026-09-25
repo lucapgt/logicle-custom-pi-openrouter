@@ -1,48 +1,92 @@
 <h1 align="center" style="border-bottom: none">
-    <div>
-        <a href="https://logicle.ai">
-            <img src="./logicle/public/logo.png" width="90" />
-            <br>
-            Logicle
-        </a>
-    </div>
-    The Open Source ChatGPT Enterprise Alternative <br>
+  <div>
+    <a href="https://logicle.ai">
+      <img src="./logicle/public/logo.png" width="90" />
+      <br>
+      Logicle
+    </a>
+  </div>
 </h1>
 
-## ⭐️ Why Logicle?
-Logicle was created to enable companies of all sizes to adopt Generative AI with no initial investment and total flexibility.
-Our platform is built for full extensibility, allowing seamless integration with any company system CRM, legacy ERP, or custom software and compatibility with any commercial and open-source LLM provider, ensuring your company data remains free from vendor lock-in.
+<h2 align="center">logicle-custom-pi-openrouter</h2>
 
+<p align="center">
+  <strong>Custom Logicle fork with Pi Agent / Satellite integration, OpenRouter, dynamic model discovery, OpenAI-compatible backends and global theme support.</strong>
+</p>
 
-## 🔧 Custom fork features
+> This repository is a customized fork of <strong>Logicle</strong>. It keeps the upstream Logicle feature set, while adding and maintaining a separate set of custom integrations and UI/backend changes described below.
 
-This fork keeps the standard Logicle feature set and adds:
+## 🚀 What this custom fork adds
 
-- Native **OpenRouter** support with dynamic model discovery.
-- **OpenAI** dynamic model discovery while preserving known Logicle model metadata when available.
-- **OpenAI-compatible** backends with configurable endpoint, dynamic `/models` discovery, and optional manual model IDs as fallback.
-- **Pi Agent / Satellite** integration, including reverse inference and tool-use bridging.
-- Global **Light / Dark / System** theme support.
+The custom work in **logicle-custom-pi-openrouter** is intentionally kept in source code, without runtime patching of compiled JavaScript.
 
-More details are available in [CUSTOM_FEATURES.md](./docs/CUSTOM_FEATURES.md).
+### 🤖 Pi Agent / Satellite integration
 
-## ✨ Features
+- Native source-level **Satellite / Pi Agent** integration.
+- Reverse inference from Satellite/Pi back into the active Logicle language model.
+- Parent tool-call tracking and inference context propagation.
+- MCP sampling conversion.
+- Tool-call and tool-result bridging.
+- Streaming support for text and tool-use events.
 
-- **👥 Enhanced Multi-User Access**: Streamline onboarding with multi-user support, featuring dual-level authorization for users and admins.
+### 🌐 OpenRouter support
 
-- **🔗 SSO Integration**: Easily integrate with leading Enterprise SSO providers (Microsoft Entra ID, Okta, ADFS, Auth0, Google Workspace SSO), supporting OIDC and SAML 2.0.
+- Native **OpenRouter** backend provider.
+- Dynamic model discovery from OpenRouter.
+- Model metadata support including context length, vision and tool/function-calling capabilities when available.
+- OpenRouter authentication handled directly by the provider implementation.
 
-- **⚙️ Simplified Configuration**: Quickly customize settings via a user-friendly admin UI for effortless setup and integration.
+### 🔌 OpenAI-compatible backends
 
-- **🔒 Security**: Integrate seamlessly with open-source inference servers like Ollama and Local.ai, enabling secure AI services even in air-gapped environments.
+- Configurable OpenAI-compatible endpoint.
+- Dynamic model discovery through `/models`.
+- Optional manual **Model IDs** field.
+- Manual model IDs are merged with discovered models and act as a fallback when `/models` is unavailable.
+- API key is optional, allowing use with local inference servers that do not require authentication.
 
-- **🛢️ Database Flexibility**: Choose between SQLite for small-scale use and Postgres for enterprise deployments.
+### 🧠 Dynamic model discovery
 
-- **🤖 Custom AI Assistants**: Deploy specialized AI assistants with tailored knowledge for precise task execution.
+Model lists are no longer limited to a static catalog for the custom providers:
+
+| Provider | Model discovery |
+| --- | --- |
+| OpenAI | Dynamic via `/v1/models`, with known Logicle metadata preserved where available |
+| OpenRouter | Dynamic via OpenRouter model API |
+| OpenAI-compatible | Dynamic via `/models` + optional manual model IDs |
+
+This allows newly available models to appear without having to edit the Logicle source catalog first.
+
+### 🎨 Theme support
+
+- Global **Light**
+- Global **Dark**
+- **System** theme following the operating-system preference
+- Theme preference persists across the application
+
+### 🛠 Assistant tools
+
+The assistant **Tools** tab remains visible independently of the selected model capability metadata. This is useful because the section also contains Satellite/Pi integrations and other assistant-level tools.
+
+More implementation details are documented in [CUSTOM_FEATURES.md](./docs/CUSTOM_FEATURES.md).
+
+---
+
+## ⭐️ About Logicle
+
+Logicle is an open-source ChatGPT Enterprise alternative designed for flexible self-hosting, extensibility and integration with commercial and open-source LLM providers.
+
+This fork preserves the standard Logicle capabilities, including:
+
+- **👥 Multi-user access** with user/admin authorization.
+- **🔗 SSO integration** with OIDC and SAML 2.0 providers.
+- **⚙️ Admin configuration UI**.
+- **🔒 Self-hosted and local inference support**.
+- **🛢️ SQLite and PostgreSQL support**.
+- **🤖 Custom AI assistants and knowledge integrations**.
 
 ## 🚀 Quick try
 
-The `pi-openrouter` branch publishes a Docker image to GitHub Container Registry after the full CI pipeline succeeds.
+After the CI pipeline on the custom branch succeeds, the Docker image is published to GitHub Container Registry.
 
 ```bash
 docker run -d --name logicle \
@@ -50,11 +94,11 @@ docker run -d --name logicle \
   ghcr.io/lucapgt/logicle-custom-pi-openrouter:latest
 ```
 
-Then open [http://localhost:3000](http://localhost:3000) in your browser.
+Then open [http://localhost:3000](http://localhost:3000).
 
-If the GHCR package has not yet been made public, open the package settings on GitHub once and change its visibility to **Public**. No extra registry credentials are needed after that for public pulls.
+If the GHCR package has not yet been made public, open the package settings on GitHub once and change its visibility to **Public**. Public pulls then require no registry credentials.
 
-To build the fork locally instead:
+### Build locally
 
 ```bash
 git clone https://github.com/lucapgt/logicle-custom-pi-openrouter.git
@@ -63,16 +107,35 @@ git checkout pi-openrouter
 docker build -t logicle-custom:latest .
 ```
 
+Run the locally built image:
+
+```bash
+docker run -d --name logicle \
+  -p 3000:3000 \
+  logicle-custom:latest
+```
+
 ## Self-Hosting
 
-Logicle offers flexible deployment options, including Docker, Docker Compose, and Kubernetes, to best suit your self-hosting needs.
+Logicle supports Docker, Docker Compose and Kubernetes deployments.
 
-For detailed instructions on how to deploy Logicle using these methods, please refer to our [Self-Hosting Documentation](./deploy/README.md).
+For detailed deployment instructions, see the [Self-Hosting Documentation](./deploy/README.md).
 
 ## Testing
 
-For the project testing strategy and procedure (smoke, integration, and LLM provider coverage), see [TESTING.md](./TESTING.md).
+For the test strategy and procedure, including smoke, integration and LLM provider coverage, see [TESTING.md](./TESTING.md).
+
+The custom fork is also validated through GitHub Actions before publishing the `latest` container image.
+
+## Upstream project
+
+This repository is based on the upstream Logicle project:
+
+- Upstream repository: `logicleai/logicle`
+- Custom fork: `lucapgt/logicle-custom-pi-openrouter`
+
+Upstream changes can continue to be incorporated while keeping the custom Pi/OpenRouter/OpenAI-compatible functionality maintained in this fork.
 
 ## Licensing Information
 
-Logicle is made available under the AGPLv3 license. For more information about the terms and conditions, please view the [license file](./LICENSE).
+Logicle and this fork are distributed under the **GNU Affero General Public License v3.0 (AGPLv3)**. See [LICENSE](./LICENSE).
