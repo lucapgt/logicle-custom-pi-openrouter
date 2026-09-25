@@ -300,7 +300,7 @@ jobs:
 
   publish-ghcr:
     needs: [providers-mock, check-types, frontend-bundle, unit-tests, docker]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/pi-openrouter'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
