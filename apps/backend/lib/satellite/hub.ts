@@ -29,6 +29,9 @@ export interface SatelliteConnection {
       resolve: (value: CallToolResult) => void
       reject: (reason?: unknown) => void
       uiLink: ToolUILink
+      inferenceContext?: {
+        sample: (request: unknown) => Promise<unknown>
+      }
     }
   >
   connectedAt: Date
@@ -246,6 +249,71 @@ async function handleSatelliteMessage(
       }
     }
 
+    if (msg.type === 'inference-request') {
+      const conn = findConnection(socket)
+      if (!conn) return
+
+      const requestId = msg.id
+      const parentToolCallId =
+        typeof msg.parentToolCallId === 'string' ? msg.parentToolCallId : undefined
+
+      if (!parentToolCallId) {
+        socket.send(
+          JSON.stringify({
+            type: 'inference-error',
+            id: requestId,
+            error: 'Missing parentToolCallId',
+          })
+        )
+        return
+      }
+
+      const pending = conn.pendingCalls.get(parentToolCallId)
+      if (!pending) {
+        socket.send(
+          JSON.stringify({
+            type: 'inference-error',
+            id: requestId,
+            error: `Unknown parentToolCallId ${parentToolCallId}`,
+          })
+        )
+        return
+      }
+
+      if (typeof pending.inferenceContext?.sample !== 'function') {
+        socket.send(
+          JSON.stringify({
+            type: 'inference-error',
+            id: requestId,
+            error: `Tool call ${parentToolCallId} has no sampling context`,
+          })
+        )
+        return
+      }
+
+      Promise.resolve()
+        .then(() => pending.inferenceContext!.sample(msg.request))
+        .then((result) => {
+          if (socket.readyState === socket.OPEN) {
+            socket.send(JSON.stringify({ type: 'inference-result', id: requestId, result }))
+          }
+        })
+        .catch((error) => {
+          logger.error('[SatelliteHub] Reverse inference failed:', error)
+          if (socket.readyState === socket.OPEN) {
+            socket.send(
+              JSON.stringify({
+                type: 'inference-error',
+                id: requestId,
+                error: error instanceof Error ? error.message : String(error),
+              })
+            )
+          }
+        })
+
+      return
+    }
+
     logger.warn('[SatelliteHub] Unknown message from satellite:', msg)
   } catch (err) {
     logger.error('[SatelliteHub] Failed to parse satellite message:', err)
@@ -294,7 +362,10 @@ export function callSatelliteMethod(
   satelliteId: string,
   method: string,
   uiLink: ToolUILink,
-  params: unknown
+  params: unknown,
+  inferenceContext?: {
+    sample: (request: unknown) => Promise<unknown>
+  }
 ): Promise<CallToolResult> {
   const conn = connections.get(satelliteId)
   if (!conn) {
@@ -308,7 +379,7 @@ export function callSatelliteMethod(
   const id = String(hub.nextCallId++)
   const msg: ToolCallMessage = { type: 'tool-call', id, method, params }
   return new Promise((resolve, reject) => {
-    conn.pendingCalls.set(id, { uiLink, resolve, reject })
+    conn.pendingCalls.set(id, { uiLink, resolve, reject, inferenceContext })
 
     if (conn.socket.readyState === conn.socket.OPEN) {
       conn.socket.send(JSON.stringify(msg))
