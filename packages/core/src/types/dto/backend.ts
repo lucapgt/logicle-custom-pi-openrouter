@@ -13,6 +13,7 @@ const options = [
     name: zodName,
     apiKey: zodOptionalApiKey,
     endPoint: z.string().url(),
+    modelIds: z.string().optional().default(''),
   }),
   z.object({ providerType: z.literal('anthropic'), name: zodName, apiKey: zodApiKey }),
   z.object({
@@ -47,6 +48,7 @@ const backendOptions = [
     name: zodName,
     apiKey: zodOptionalApiKey,
     endPoint: z.string().url(),
+    modelIds: z.string().optional().default(''),
     id: z.string(),
     provisioned: z.boolean(),
   }),
