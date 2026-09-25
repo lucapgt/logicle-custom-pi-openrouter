@@ -62,14 +62,19 @@ export function createLanguageModelBasic(
       if (!apiKey) {
         throw new Error('OpenRouter API key is missing')
       }
+      const openRouterFetch: typeof globalThis.fetch = async (input, init) => {
+        const headers = new Headers(init?.headers)
+        headers.set('Authorization', `Bearer ${apiKey}`)
+        const requestInit = { ...init, headers }
+        return env.dumpLlmConversation
+          ? loggingFetch(input, requestInit)
+          : globalThis.fetch(input, requestInit)
+      }
       return openai
         .createOpenAI({
           apiKey,
           baseURL: 'https://openrouter.ai/api/v1',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-          fetch,
+          fetch: openRouterFetch,
         })
         .chat(model.model)
     }
