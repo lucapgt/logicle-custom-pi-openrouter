@@ -65,7 +65,7 @@ export const EditWithPreview = forwardRef<EditWithPreviewHandle, EditWithPreview
           <textarea
             ref={textareaRef}
             style={{ height }}
-            className="w-full border p-3 rounded-md"
+            className="w-full rounded-md border bg-background p-3 text-foreground"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(evt) => {
@@ -73,7 +73,10 @@ export const EditWithPreview = forwardRef<EditWithPreviewHandle, EditWithPreview
             }}
           />
         ) : (
-          <ScrollArea style={{ height }} className="border p-3 rounded-md">
+          <ScrollArea
+            style={{ height }}
+            className="rounded-md border bg-background p-3 text-foreground"
+          >
             <Markdown className="prose">{value}</Markdown>
           </ScrollArea>
         )}
