@@ -320,7 +320,8 @@ export class ChatAssistant {
       llmModels.find(
         (m) => m.id === assistantParams.model && m.provider === providerConfig.providerType
       ) ??
-      (providerConfig.providerType === 'openrouter' ||
+      (providerConfig.providerType === 'openai' ||
+      providerConfig.providerType === 'openrouter' ||
       providerConfig.providerType === 'openai-compatible'
         ? ({
             id: assistantParams.model,
@@ -341,6 +342,9 @@ export class ChatAssistant {
             capabilities: {
               vision: false,
               function_calling: true,
+              // Discovery supplies only an ID; avoid optional sampling parameters
+              // that newer OpenAI models may reject.
+              temperature: providerConfig.providerType === 'openai' ? false : undefined,
             },
           } satisfies LlmModel)
         : undefined)

@@ -357,6 +357,34 @@ describe('ChatAssistant.withBuiltinTools', () => {
 })
 
 describe('ChatAssistant.build', () => {
+  test('sends an OpenAI model outside the static catalog through the Responses API', async () => {
+    const { llmModels } = await import('@/lib/models')
+    ;(llmModels as LlmModel[]).splice(0)
+    mockCreateOpenAI.mockReturnValue({
+      responses: (id: string) => ({ provider: 'openai.responses', id }),
+    })
+
+    const providerConfig = {
+      providerType: 'openai',
+      name: 'OpenAI',
+      apiKey: 'k',
+      provisioned: false,
+    } as ProviderConfig
+    const params = {
+      assistantId: 'a1',
+      model: 'gpt-6-sol',
+      systemPrompt: '',
+      temperature: 0,
+      tokenLimit: 1000,
+      reasoning_effort: null,
+      contextCompression: null,
+    } as const
+
+    const assistant = await ChatAssistant.build(providerConfig, params, {}, [], [], { user: 'u1' })
+    expect((assistant.languageModel as any).id).toBe('gpt-6-sol')
+    expect(assistant.llmModelCapabilities.temperature).toBe(false)
+  })
+
   test('throws when authenticated user is missing in options', async () => {
     const { llmModels } = await import('@/lib/models')
     ;(llmModels as unknown as LlmModel[]).splice(0, (llmModels as unknown as LlmModel[]).length)
