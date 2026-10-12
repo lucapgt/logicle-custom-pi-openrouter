@@ -58,6 +58,22 @@ export default function PiRuntimePage() {
     }
   }, [activeTurnId])
 
+  // Reopen the durable Pi session for this conversation after navigation/refresh.
+  useEffect(() => {
+    if (!conversationId || sessionId) return
+    let cancelled = false
+    fetch(`/api/pi/conversations/${encodeURIComponent(conversationId)}/session`, {
+      credentials: 'same-origin',
+    }).then(async response => {
+      if (response.status === 404) return null
+      if (!response.ok) throw new Error(`Could not load Pi session: ${response.status}`)
+      return response.json() as Promise<{ sessionId: string }>
+    }).then(existing => {
+      if (!cancelled && existing) setSearch({ session: existing.sessionId }, { replace: true })
+    }).catch(error => { if (!cancelled) setError(String(error)) })
+    return () => { cancelled = true }
+  }, [conversationId, sessionId, setSearch])
+
   useEffect(() => {
     setEvents([])
     setLastSeq(0)
