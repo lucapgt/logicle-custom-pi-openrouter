@@ -2,6 +2,7 @@ import { FC, useContext, useEffect, useState } from 'react'
 import * as dto from '@/types/dto'
 import ChatPageContext from './context'
 import { useTranslation } from 'react-i18next'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ChatSharingDialog } from './ChatSharingDialog'
 import { useEnvironment } from '@/app/context/environmentProvider'
@@ -15,6 +16,7 @@ interface Props {
 
 export const ChatHeader: FC<Props> = ({ assistant }) => {
   const { t } = useTranslation()
+  const router = useRouter()
   const environment = useEnvironment()
   const { isMobile } = useLayoutConfig()
   const {
@@ -91,6 +93,15 @@ export const ChatHeader: FC<Props> = ({ assistant }) => {
             />
           )}
         </h3>
+      )}
+      {selectedConversation && (
+        <Button
+          variant="secondary"
+          size={isMobile ? 'small' : undefined}
+          onClick={() => router.push(`/pi/${encodeURIComponent(selectedConversation.id)}`)}
+        >
+          Pi Agent
+        </Button>
       )}
       {environment.enableChatSharing && (
         <Button
