@@ -23,7 +23,7 @@ type Pending = {
 /** Opt-in controller: the caller must authorize user, conversation, satellite and model. */
 export class PiSessionController {
   private pending = new Map<string, Pending>()
-  private sampling = new Map<string, { satelliteId: string; sample: Sampling }>()
+  private sampling = new Map<string, { satelliteId: string; sessionId: string; turnId: string; sample: Sampling }>()
   private turnTimers = new Map<string, ReturnType<typeof setTimeout>>()
   private counter = 0
   constructor(
@@ -63,7 +63,7 @@ export class PiSessionController {
       throw new Error('Satellite already running a Pi turn')
     }
     const requestId = `pi-${++this.counter}-${Date.now()}`
-    this.sampling.set(requestId, { satelliteId: record.satelliteId, sample })
+    this.sampling.set(requestId, { satelliteId: record.satelliteId, sessionId, turnId, sample })
     const acknowledged = new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => {
         const pending = this.pending.get(requestId)
@@ -114,7 +114,7 @@ export class PiSessionController {
       if (!record) return false
       await this.store.appendEvent(record, msg)
       if (msg.kind === 'turn-complete' || msg.kind === 'turn-error') {
-        for (const [id, context] of this.sampling) if (context.satelliteId === satelliteId) {
+        for (const [id, context] of this.sampling) if (context.satelliteId === satelliteId && context.sessionId === msg.sessionId && (!msg.turnId || context.turnId === msg.turnId)) {
           this.sampling.delete(id)
           const timer = this.turnTimers.get(id)
           if (timer) clearTimeout(timer)
