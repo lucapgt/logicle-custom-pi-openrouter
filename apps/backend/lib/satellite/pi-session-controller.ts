@@ -25,6 +25,7 @@ export class PiSessionController {
   private pending = new Map<string, Pending>()
   private sampling = new Map<string, { satelliteId: string; sessionId: string; turnId: string; sample: Sampling }>()
   private turnTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  private eventQueue = new Map<string, Promise<void>>()
   private counter = 0
   constructor(
     private transport: PiSessionTransport,
@@ -110,18 +111,33 @@ export class PiSessionController {
   /** Only call after checking the authenticated WebSocket identity. */
   async receive(satelliteId: string, msg: PiSessionResponse): Promise<boolean> {
     if (msg.type === 'session-event') {
-      const record = await this.store.getSessionForSatellite(satelliteId, msg.sessionId)
-      if (!record) return false
-      await this.store.appendEvent(record, msg)
-      if (msg.kind === 'turn-complete' || msg.kind === 'turn-error') {
-        for (const [id, context] of this.sampling) if (context.satelliteId === satelliteId && context.sessionId === msg.sessionId && (!msg.turnId || context.turnId === msg.turnId)) {
-          this.sampling.delete(id)
-          const timer = this.turnTimers.get(id)
-          if (timer) clearTimeout(timer)
-          this.turnTimers.delete(id)
+      // WebSocket callbacks may run concurrently. Event writes and cursor changes
+      // must preserve the per-session on-wire ordering, including replay bursts.
+      const key = `${satelliteId}:${msg.sessionId}`
+      const before = this.eventQueue.get(key) ?? Promise.resolve()
+      const work = before.then(async () => {
+        const record = await this.store.getSessionForSatellite(satelliteId, msg.sessionId)
+        if (!record) throw new Error('Pi session event is unauthorized')
+        await this.store.appendEvent(record, msg)
+        if ((msg.kind === 'turn-complete' || msg.kind === 'turn-error') && msg.turnId) {
+          for (const [id, context] of this.sampling) {
+            if (context.satelliteId !== satelliteId || context.sessionId !== msg.sessionId ||
+                context.turnId !== msg.turnId) continue
+            this.sampling.delete(id)
+            const timer = this.turnTimers.get(id)
+            if (timer) clearTimeout(timer)
+            this.turnTimers.delete(id)
+          }
         }
+      })
+      const tail = work.then(() => undefined, () => undefined)
+      this.eventQueue.set(key, tail)
+      try {
+        await work
+        return true
+      } finally {
+        if (this.eventQueue.get(key) === tail) this.eventQueue.delete(key)
       }
-      return true
     }
     const pending = this.pending.get(msg.requestId)
     if (!pending || pending.satelliteId !== satelliteId) return false
