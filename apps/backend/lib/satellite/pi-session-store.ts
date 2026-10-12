@@ -1,6 +1,24 @@
 import { db } from 'db/database'
 import type { PiSessionStore, SessionEvent, SessionRecord } from './pi-session-controller'
 
+/** Extract the human-visible result from the local MCP response envelope. */
+function piResultText(payload: unknown): string {
+  if (typeof payload === 'string') return payload
+  if (!payload || typeof payload !== 'object') return String(payload ?? '')
+  const object = payload as Record<string, unknown>
+  const blocks = object.content
+  if (Array.isArray(blocks)) {
+    const text = blocks
+      .filter((item): item is { text: string } =>
+        !!item && typeof item === 'object' &&
+        (item as Record<string, unknown>).type === 'text' &&
+        typeof (item as Record<string, unknown>).text === 'string'
+      ).map(item => item.text).join('\n')
+    if (text.length) return text
+  }
+  return JSON.stringify(payload)
+}
+
 export class DatabasePiSessionStore implements PiSessionStore {
   /** Find an existing Pi binding for an owned Logicle conversation. */
   async getSessionForConversation(userId: string, conversationId: string): Promise<SessionRecord | null> {
@@ -92,6 +110,38 @@ export class DatabasePiSessionStore implements PiSessionStore {
         sessionId: record.sessionId, seq: event.seq, kind: event.kind,
         payload: JSON.stringify(event), createdAt: new Date().toISOString(),
       }).execute()
+      // Project terminal Pi events into the canonical Logicle chat history.
+      // The event and message commit atomically. Intermediate Pi tool events remain
+      // in PiSessionEvent and are shown in the Pi activity view.
+      if (event.turnId && (event.kind === 'turn-complete' || event.kind === 'turn-error')) {
+        const userMessageId = `pi-user-${event.turnId}`
+        const userMessage = await trx.selectFrom('Message').select('id')
+          .where('id', '=', userMessageId)
+          .where('conversationId', '=', record.conversationId)
+          .where('role', '=', 'user')
+          .executeTakeFirst()
+        if (!userMessage) throw new Error('Terminal Pi event has no persisted user prompt')
+        const isError = event.kind === 'turn-error'
+        const text = piResultText(event.payload)
+        const sentAt = new Date().toISOString()
+        await trx.insertInto('Message').values({
+          id: `pi-assistant-${event.turnId}`,
+          conversationId: record.conversationId,
+          parent: userMessageId,
+          role: 'assistant',
+          content: JSON.stringify({
+            parts: isError
+              ? [{ type: 'error', error: text }]
+              : [{ type: 'text', text }],
+            finishReason: isError ? 'error' : 'stop',
+          }),
+          sentAt,
+          version: 4,
+        }).execute()
+        await trx.updateTable('Conversation')
+          .set({ lastMsgSentAt: sentAt })
+          .where('id', '=', record.conversationId).execute()
+      }
     })
   }
 }
