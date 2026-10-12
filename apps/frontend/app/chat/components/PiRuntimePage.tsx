@@ -115,6 +115,34 @@ export default function PiRuntimePage() {
     return () => { cancelled = true; clearInterval(interval) }
   }, [sessionId, lastSeq, load])
 
+  // SSE is the low-latency path; paginated polling above remains a fallback.
+  useEffect(() => {
+    if (!sessionId) return
+    const stream = new EventSource(
+      `/api/pi/sessions/${encodeURIComponent(sessionId)}/stream?afterSeq=0`,
+    )
+    const onEvent = (raw: Event) => {
+      const message = raw as MessageEvent<string>
+      try {
+        const event = JSON.parse(message.data) as PiEvent
+        if (!Number.isSafeInteger(event.seq) || event.sessionId !== sessionId) return
+        setEvents(current => {
+          if (current.some(previous => previous.seq === event.seq)) return current
+          return [...current, event].sort((a, b) => a.seq - b.seq)
+        })
+        setLastSeq(last => Math.max(last, event.seq))
+        if (event.kind === 'turn-complete' || event.kind === 'turn-error') {
+          setActiveTurnId(current => current === event.turnId ? '' : current)
+        }
+      } catch { /* Ignore malformed events; server-side history stays authoritative. */ }
+    }
+    stream.addEventListener('pi-event', onEvent)
+    return () => {
+      stream.removeEventListener('pi-event', onEvent)
+      stream.close()
+    }
+  }, [sessionId])
+
   const start = async () => {
     if (!conversationId) return
     setBusy(true)
