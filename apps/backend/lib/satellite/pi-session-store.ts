@@ -2,6 +2,32 @@ import { db } from 'db/database'
 import type { PiSessionStore, SessionEvent, SessionRecord } from './pi-session-controller'
 
 export class DatabasePiSessionStore implements PiSessionStore {
+  /** Read stored events only after checking session and conversation ownership. */
+  async listEvents(userId: string, sessionId: string, afterSeq = 0, limit = 100): Promise<SessionEvent[] | null> {
+    if (!Number.isSafeInteger(afterSeq) || afterSeq < 0 ||
+        !Number.isSafeInteger(limit) || limit < 1 || limit > 200) {
+      throw new Error('Invalid Pi event pagination')
+    }
+    return db.transaction().execute(async trx => {
+      const owned = await trx.selectFrom('PiSession as p')
+        .innerJoin('Conversation as c', 'c.id', 'p.conversationId')
+        .select('p.sessionId')
+        .where('p.sessionId', '=', sessionId)
+        .where('p.userId', '=', userId)
+        .where('c.ownerId', '=', userId)
+        .executeTakeFirst()
+      if (!owned) return null
+      const rows = await trx.selectFrom('PiSessionEvent')
+        .select('payload')
+        .where('sessionId', '=', sessionId)
+        .where('seq', '>', afterSeq)
+        .orderBy('seq', 'asc')
+        .limit(limit)
+        .execute()
+      return rows.map(row => JSON.parse(row.payload) as SessionEvent)
+    })
+  }
+
   async saveSession(record: SessionRecord): Promise<void> {
     await db.transaction().execute(async trx => {
       const conversation = await trx.selectFrom('Conversation').select('id')
