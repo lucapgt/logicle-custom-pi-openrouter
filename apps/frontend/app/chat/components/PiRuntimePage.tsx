@@ -194,7 +194,20 @@ export default function PiRuntimePage() {
         </section>
       ) : (
         <>
-          <p className="text-xs opacity-70">Sessione: {sessionId} {refreshing ? '· aggiornamento…' : ''}</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs opacity-70">Sessione: {sessionId} {refreshing ? '· aggiornamento…' : ''}</p>
+            <button type="button" className="rounded border px-3 py-1 text-sm disabled:opacity-40"
+              disabled={busy}
+              onClick={() => {
+                setError('')
+                setBusy(true)
+                void api(`/api/pi/sessions/${encodeURIComponent(sessionId)}/resume`, { method: 'POST' })
+                  .catch(err => setError(String(err)))
+                  .finally(() => setBusy(false))
+              }}>
+              Riprendi / recupera eventi
+            </button>
+          </div>
           <section aria-label="Eventi Pi" className="min-h-48 flex-1 space-y-3 overflow-auto rounded-lg border p-3">
             {events.length === 0 ? <p className="text-sm opacity-60">Nessun evento. Invia un messaggio per iniziare.</p> : null}
             {events.map(event => (
