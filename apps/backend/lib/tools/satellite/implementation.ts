@@ -94,7 +94,10 @@ const samplingText = (content: any): string =>
     })
     .join('\n')
 
-const createSamplingFunction = (llmModel: LlmModel, context: ToolFunctionContext) => {
+export const createSamplingFunction = (
+  llmModel: LlmModel,
+  context: Pick<ToolFunctionContext, 'samplingLanguageModel'>
+) => {
   return async (request: any) => {
     if (!context.samplingLanguageModel) {
       throw new Error('Satellite sampling language model is not available')
