@@ -1,0 +1,49 @@
+name: Pi native runtime branch validation
+
+on:
+  push:
+    branches:
+      - feature/pi-native-runtime
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pi-native-runtime-manifests
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/pi-native-runtime
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.22.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Regenerate route and migration manifests using project scripts
+        run: |
+          pnpm run generate:backend-route-manifest
+          pnpm run generate:migration-manifest
+      - name: Typecheck entire workspace
+        run: pnpm run check-types
+      - name: Commit generated manifests on feature branch only
+        run: |
+          if ! git diff --quiet -- apps/backend/lib/router/routes.generated.ts apps/backend/db/migrations.generated.ts; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add apps/backend/lib/router/routes.generated.ts apps/backend/db/migrations.generated.ts
+            git commit -m 'chore(pi): regenerate backend route and migration manifests'
+            git push origin HEAD:feature/pi-native-runtime
+          fi
+      - name: Run backend unit tests
+        run: pnpm test -- --run
