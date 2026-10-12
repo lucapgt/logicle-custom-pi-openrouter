@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 
+type SatelliteChoice = { id: string; name: string; kind: 'registered' | 'ephemeral'; connected: boolean }
 type PiEvent = {
   type: 'session-event'
   sessionId: string
@@ -33,6 +34,7 @@ export default function PiRuntimePage() {
   const [search, setSearch] = useSearchParams()
   const sessionId = search.get('session') ?? ''
   const [satelliteId, setSatelliteId] = useState('')
+  const [satellites, setSatellites] = useState<SatelliteChoice[]>([])
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -57,6 +59,14 @@ export default function PiRuntimePage() {
       setActiveTurnId('')
     }
   }, [activeTurnId])
+
+  useEffect(() => {
+    let cancelled = false
+    api<SatelliteChoice[]>('/api/me/satellites')
+      .then(data => { if (!cancelled) setSatellites(data.filter(s => s.kind === 'registered' && s.connected)) })
+      .catch(err => { if (!cancelled) setError(String(err)) })
+    return () => { cancelled = true }
+  }, [])
 
   // Reopen the durable Pi session for this conversation after navigation/refresh.
   useEffect(() => {
@@ -143,8 +153,12 @@ export default function PiRuntimePage() {
       <p className="text-xs opacity-70">Conversazione: {conversationId ?? 'non selezionata'}</p>
       {!sessionId ? (
         <section className="grid gap-3 rounded-lg border p-4">
-          <label className="grid gap-1 text-sm">Satellite registrato
-            <input aria-label="Satellite registrato" className="rounded border bg-transparent p-2" value={satelliteId} onChange={e => setSatelliteId(e.target.value)} />
+          <label className="grid gap-1 text-sm">Satellite connesso
+            <select aria-label="Satellite connesso" className="rounded border bg-background p-2"
+              value={satelliteId} onChange={e => setSatelliteId(e.target.value)}>
+              <option value="">Seleziona un satellite</option>
+              {satellites.map(satellite => <option key={satellite.id} value={satellite.id}>{satellite.name}</option>)}
+            </select>
           </label>
           <button className="rounded bg-primary px-3 py-2 text-primary-foreground disabled:opacity-40"
             disabled={busy || !conversationId || !satelliteId}
