@@ -1,4 +1,5 @@
 import { ChatAssistant } from '@/backend/lib/chat'
+import { DatabasePiSessionStore } from '@/lib/satellite/pi-session-store'
 import { ChatState } from '@/backend/lib/chat/ChatState'
 import {
   createChatRun,
@@ -97,6 +98,19 @@ export const startServerChatRun = async ({
       ok: false,
       status: 403,
       message: 'You no longer have access to this assistant',
+    }
+  }
+
+  // A conversation bound to Pi must never be processed by Logicle's standard
+  // ChatAssistant loop. All new turns go through the Pi controller instead.
+  const piBinding = await new DatabasePiSessionStore().getSessionForConversation(
+    session.userId, conversation.id,
+  )
+  if (piBinding) {
+    return {
+      ok: false,
+      status: 409,
+      message: 'This conversation uses the Pi runtime; send the prompt to its Pi session instead',
     }
   }
 
