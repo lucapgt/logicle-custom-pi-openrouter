@@ -15,6 +15,9 @@ import { getSatellite } from '@/models/satellite'
 import { logger } from '@/lib/logging'
 import { satelliteEventBus } from '@/lib/satellite/events'
 import { nanoid } from 'nanoid'
+import { createPiHubAdapter } from './pi-session-hub-adapter'
+import { DatabasePiSessionStore } from './pi-session-store'
+import { isPiSessionResponse } from './pi-session-protocol'
 
 export interface SatelliteConnection {
   satelliteId: string
@@ -48,6 +51,9 @@ export const hub: SatelliteHub = {
 }
 
 export const connections = hub.connections
+
+// Separate opt-in Pi session channel; legacy tool calls keep their original path.
+export const piSessionHub = createPiHubAdapter(connections, new DatabasePiSessionStore())
 
 interface SatelliteAuthResult {
   userId: string
@@ -137,6 +143,15 @@ async function handleSatelliteMessage(
 ) {
   try {
     const msg = JSON.parse(String(data)) as Message
+
+    // Handle only authenticated, registered satellite session events.
+    // The socket, not the untrusted message body, determines satellite identity.
+    if (isPiSessionResponse(msg)) {
+      const conn = findConnection(socket)
+      if (!conn || conn.kind !== 'registered') return
+      await piSessionHub.receive(conn, msg)
+      return
+    }
 
     // Unified register handler for both registered and ephemeral satellites
     if (msg.type === 'register') {
@@ -269,30 +284,23 @@ async function handleSatelliteMessage(
       }
 
       const pending = conn.pendingCalls.get(parentToolCallId)
-      if (!pending) {
+      const sessionSample = conn.kind === 'registered'
+        ? piSessionHub.sampling(conn.satelliteId, parentToolCallId)
+        : undefined
+      const sample = pending?.inferenceContext?.sample ?? sessionSample
+      if (!sample) {
         socket.send(
           JSON.stringify({
             type: 'inference-error',
             id: requestId,
-            error: `Unknown parentToolCallId ${parentToolCallId}`,
-          })
-        )
-        return
-      }
-
-      if (typeof pending.inferenceContext?.sample !== 'function') {
-        socket.send(
-          JSON.stringify({
-            type: 'inference-error',
-            id: requestId,
-            error: `Tool call ${parentToolCallId} has no sampling context`,
+            error: `Unknown or unauthorized parentToolCallId ${parentToolCallId}`,
           })
         )
         return
       }
 
       Promise.resolve()
-        .then(() => pending.inferenceContext!.sample(msg.request))
+        .then(() => sample(msg.request))
         .then((result) => {
           if (socket.readyState === socket.OPEN) {
             socket.send(JSON.stringify({ type: 'inference-result', id: requestId, result }))
@@ -337,6 +345,7 @@ function handleSatelliteClose(socket: WebSocket) {
     return
   }
 
+  piSessionHub.disconnected(conn)
   connections.delete(conn.satelliteId)
   for (const { reject } of conn.pendingCalls.values()) {
     reject(new Error('Satellite disconnected'))
