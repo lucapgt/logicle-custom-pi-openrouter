@@ -87,6 +87,7 @@ export const backendRouteModules = [
   { pathname: '/api/me/tools', load: () => import('@/backend/api/me/tools/route') },
   { pathname: '/api/oauth/oidc', load: () => import('@/backend/api/oauth/oidc/route') },
   { pathname: '/api/oauth/saml', load: () => import('@/backend/api/oauth/saml/route') },
+  { pathname: '/api/pi/conversations/[conversationId]/session', load: () => import('@/backend/api/pi/conversations/[conversationId]/session/route') },
   { pathname: '/api/pi/sessions/[sessionId]/events', load: () => import('@/backend/api/pi/sessions/[sessionId]/events/route') },
   { pathname: '/api/pi/sessions/[sessionId]/prompt', load: () => import('@/backend/api/pi/sessions/[sessionId]/prompt/route') },
   { pathname: '/api/pi/sessions/[sessionId]', load: () => import('@/backend/api/pi/sessions/[sessionId]/route') },
