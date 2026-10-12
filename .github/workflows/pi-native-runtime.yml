@@ -34,8 +34,6 @@ jobs:
         run: |
           pnpm run generate:backend-route-manifest
           pnpm run generate:migration-manifest
-      - name: Typecheck entire workspace
-        run: pnpm run check-types
       - name: Commit generated manifests on feature branch only
         run: |
           if ! git diff --quiet -- apps/backend/lib/router/routes.generated.ts apps/backend/db/migrations.generated.ts; then
@@ -45,5 +43,7 @@ jobs:
             git commit -m 'chore(pi): regenerate backend route and migration manifests'
             git push origin HEAD:feature/pi-native-runtime
           fi
+      - name: Typecheck entire workspace
+        run: pnpm run check-types
       - name: Run backend unit tests
-        run: pnpm test -- --run
+        run: pnpm test
