@@ -4,6 +4,7 @@ import { getConversationWithBackendAssistant } from '@/models/conversation'
 import { canUserAccessAssistant } from '@/models/assistant'
 import { getSatellite } from '@/models/satellite'
 import { piSessionHub, connections } from '@/lib/satellite/hub'
+import { DatabasePiSessionStore } from '@/lib/satellite/pi-session-store'
 import { encodePiModelSelection, resolvePiLanguageModel } from '@/lib/satellite/pi-model-resolution'
 
 const input = z.object({
@@ -37,6 +38,11 @@ export const POST = operation({
         live.socket.readyState !== live.socket.OPEN) {
       return conflict('Selected satellite is offline')
     }
+
+    const existing = await new DatabasePiSessionStore().getSessionForConversation(
+      session.userId, body.conversationId,
+    )
+    if (existing) return conflict('Conversation already has a Pi session')
 
     // Never accept credentials, endpoint URLs, or model definitions from the client.
     const selection = {
