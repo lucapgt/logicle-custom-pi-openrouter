@@ -4,7 +4,7 @@ import { operation, ok, notFound, conflict, responseSpec, errorSpec } from '@/li
 import { piSessionHub, connections } from '@/lib/satellite/hub'
 import { DatabasePiSessionStore } from '@/lib/satellite/pi-session-store'
 import { resolveAuthorizedPiSessionModel } from '@/lib/satellite/pi-model-resolution'
-import { createSamplingFunction } from '@/lib/tools/satellite/implementation'
+import { createSamplingFunction } from '@/backend/lib/tools/satellite/implementation'
 import { getLastSentMessage } from '@/models/conversation'
 import { saveMessage } from '@/models/message'
 
