@@ -130,8 +130,6 @@ export default function PiRuntimePage() {
           <label className="grid gap-1 text-sm">Satellite registrato
             <input aria-label="Satellite registrato" className="rounded border bg-transparent p-2" value={satelliteId} onChange={e => setSatelliteId(e.target.value)} />
           </label>
-          </label>
-          </label>
           <button className="rounded bg-primary px-3 py-2 text-primary-foreground disabled:opacity-40"
             disabled={busy || !conversationId || !satelliteId}
             onClick={() => void start()}>Avvia sessione Pi</button>
