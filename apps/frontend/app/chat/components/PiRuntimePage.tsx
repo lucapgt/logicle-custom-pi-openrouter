@@ -29,8 +29,9 @@ async function api<T>(url: string, options?: RequestInit): Promise<T> {
  * Pi executes the agent loop locally; this client only starts sessions,
  * submits text and renders persisted server events. No provider keys here.
  */
-export default function PiRuntimePage() {
-  const { conversationId } = useParams<{ conversationId: string }>()
+export default function PiRuntimePage({ conversationIdOverride }: { conversationIdOverride?: string } = {}) {
+  const routeParams = useParams<{ conversationId: string }>()
+  const conversationId = conversationIdOverride ?? routeParams.conversationId
   const [search, setSearch] = useSearchParams()
   const sessionId = search.get('session') ?? ''
   const [satelliteId, setSatelliteId] = useState('')
