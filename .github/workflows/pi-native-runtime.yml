@@ -13,8 +13,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: pi-native-runtime-manifests
-  cancel-in-progress: false
+  group: pi-native-runtime-${{ github.event_name }}
+  cancel-in-progress: true
 
 jobs:
   validate:
