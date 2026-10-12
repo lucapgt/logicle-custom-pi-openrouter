@@ -3,7 +3,7 @@ import { nanoid } from 'nanoid'
 import { operation, ok, notFound, conflict, responseSpec, errorSpec } from '@/lib/routes'
 import { piSessionHub, connections } from '@/lib/satellite/hub'
 import { DatabasePiSessionStore } from '@/lib/satellite/pi-session-store'
-import { decodePiModelSelection, resolvePiLanguageModel } from '@/lib/satellite/pi-model-resolution'
+import { resolveAuthorizedPiSessionModel } from '@/lib/satellite/pi-model-resolution'
 import { createSamplingFunction } from '@/lib/tools/satellite/implementation'
 import { getLastSentMessage } from '@/models/conversation'
 import { saveMessage } from '@/models/message'
@@ -25,9 +25,7 @@ export const POST = operation({
         live.socket.readyState !== live.socket.OPEN) return conflict('Pi satellite is offline')
 
     // Selection comes from the persisted, ownership-checked session. No client credentials.
-    const { model, languageModel } = await resolvePiLanguageModel(
-      decodePiModelSelection(record.modelRef), session.userId,
-    )
+    const { model, languageModel } = await resolveAuthorizedPiSessionModel(record)
     const sample = createSamplingFunction(model, { samplingLanguageModel: languageModel })
     const turnId = nanoid()
     const previous = await getLastSentMessage(record.conversationId)
