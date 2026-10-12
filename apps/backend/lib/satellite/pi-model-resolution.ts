@@ -1,6 +1,6 @@
 import type { LanguageModelV3 } from '@ai-sdk/provider'
 import { getBackend, getModelsForBackend } from '@/models/backend'
-import { createLanguageModel } from '@/lib/chat/provider-factory'
+import { createLanguageModel } from '@/backend/lib/chat/provider-factory'
 import type { LlmModel } from '@/lib/chat/models'
 import type { ProviderConfig } from '@/types/provider'
 import { isUserProvidedApiKey, USER_SECRET_TYPE } from '@/lib/userSecrets/constants'
