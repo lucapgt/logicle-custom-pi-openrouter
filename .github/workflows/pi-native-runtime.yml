@@ -1,12 +1,6 @@
-name: Pi native runtime branch validation
+name: Pi native runtime manual validation
 
 on:
-  push:
-    branches:
-      - feature/pi-native-runtime
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
@@ -14,7 +8,7 @@ permissions:
 
 concurrency:
   group: pi-native-runtime-${{ github.event_name }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   validate:
