@@ -36,3 +36,20 @@ scripts only, not manual edits. Before enabling prompt routes:
 - test with an isolated, network-disabled Pi container.
 
 Go/Python/Docker satellite implementation is intentionally absent from this repository.
+
+
+## Prompt API checkpoint
+
+The branch now includes an experimental `POST /api/pi/sessions/{sessionId}/prompt`
+endpoint with a `{ "text": "..." }` body. The authenticated session owner
+is verified again, the model is re-resolved from the persisted selection,
+and the inference callback is registered for the Pi turn. The client cannot
+supply a provider API key or raw endpoint to this route.
+
+This route is **not enabled or validated for production** until the generated
+route manifest is rebuilt, the complete typecheck/build and integration tests
+pass, and the satellite's correlation IDs and event replay are verified with
+a real Pi RPC process. It currently acknowledges dispatch, not completion,
+and event history is separate from ordinary Logicle chat message storage.
+The existing sampling converter buffers a complete provider response rather
+than offering native end-to-end streaming.
