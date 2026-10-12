@@ -33,8 +33,6 @@ export default function PiRuntimePage() {
   const [search, setSearch] = useSearchParams()
   const sessionId = search.get('session') ?? ''
   const [satelliteId, setSatelliteId] = useState('')
-  const [backendId, setBackendId] = useState('')
-  const [modelId, setModelId] = useState('')
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -98,7 +96,7 @@ export default function PiRuntimePage() {
     try {
       const result = await api<{ sessionId: string }>('/api/pi/sessions', {
         method: 'POST',
-        body: JSON.stringify({ conversationId, satelliteId, backendId, modelId }),
+        body: JSON.stringify({ conversationId, satelliteId }),
       })
       setSearch({ session: result.sessionId })
     } catch (err) { setError(String(err instanceof Error ? err.message : err)) }
@@ -132,14 +130,10 @@ export default function PiRuntimePage() {
           <label className="grid gap-1 text-sm">Satellite registrato
             <input aria-label="Satellite registrato" className="rounded border bg-transparent p-2" value={satelliteId} onChange={e => setSatelliteId(e.target.value)} />
           </label>
-          <label className="grid gap-1 text-sm">ID backend Logicle
-            <input aria-label="ID backend Logicle" className="rounded border bg-transparent p-2" value={backendId} onChange={e => setBackendId(e.target.value)} />
           </label>
-          <label className="grid gap-1 text-sm">ID modello
-            <input aria-label="ID modello" className="rounded border bg-transparent p-2" value={modelId} onChange={e => setModelId(e.target.value)} />
           </label>
           <button className="rounded bg-primary px-3 py-2 text-primary-foreground disabled:opacity-40"
-            disabled={busy || !conversationId || !satelliteId || !backendId || !modelId}
+            disabled={busy || !conversationId || !satelliteId}
             onClick={() => void start()}>Avvia sessione Pi</button>
         </section>
       ) : (
