@@ -5,6 +5,8 @@ import { piSessionHub, connections } from '@/lib/satellite/hub'
 import { DatabasePiSessionStore } from '@/lib/satellite/pi-session-store'
 import { decodePiModelSelection, resolvePiLanguageModel } from '@/lib/satellite/pi-model-resolution'
 import { createSamplingFunction } from '@/lib/tools/satellite/implementation'
+import { getLastSentMessage } from '@/models/conversation'
+import { saveMessage } from '@/models/message'
 
 const input = z.object({ text: z.string().trim().min(1).max(100_000) })
 const output = z.object({ sessionId: z.string(), turnId: z.string(), accepted: z.literal(true) })
@@ -28,6 +30,17 @@ export const POST = operation({
     )
     const sample = createSamplingFunction(model, { samplingLanguageModel: languageModel })
     const turnId = nanoid()
+    const previous = await getLastSentMessage(record.conversationId)
+    await saveMessage({
+      id: `pi-user-${turnId}`,
+      role: 'user',
+      conversationId: record.conversationId,
+      parent: previous?.id ?? null,
+      sentAt: new Date().toISOString(),
+      content: body.text,
+      attachments: [],
+      metadata: { piSessionId: record.sessionId, piTurnId: turnId },
+    })
     await piSessionHub.controller.promptWithContext(
       session.userId, record.sessionId, turnId, body.text, sample,
     )
