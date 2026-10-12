@@ -3,6 +3,11 @@ import { getBackend, getModelsForBackend } from '@/models/backend'
 import { createLanguageModel } from '@/lib/chat/provider-factory'
 import type { LlmModel } from '@/lib/chat/models'
 import type { ProviderConfig } from '@/types/provider'
+import { isUserProvidedApiKey, USER_SECRET_TYPE } from '@/lib/userSecrets/constants'
+import { getUserSecretValue } from '@/models/userSecrets'
+import { canUserAccessAssistant } from '@/models/assistant'
+import { getConversationWithBackendAssistant } from '@/models/conversation'
+import type { SessionRecord } from './pi-session-controller'
 
 /**
  * Reference stored in PiSession.modelRef. Never contains provider credentials.
@@ -41,5 +46,30 @@ export async function resolvePiLanguageModel(
   if (model.capabilities?.function_calling === false) {
     throw new Error('Selected Pi model does not support tool calling')
   }
-  return { model, languageModel: createLanguageModel(backend as ProviderConfig, model, { user: userId }) }
+  let provider = backend as ProviderConfig
+  if ('apiKey' in provider && typeof provider.apiKey === 'string' &&
+      isUserProvidedApiKey(provider.apiKey)) {
+    const resolution = await getUserSecretValue(userId, backend.id, USER_SECRET_TYPE)
+    if (resolution.status !== 'ok') {
+      throw new Error('Selected backend requires an accessible user API key')
+    }
+    provider = { ...provider, apiKey: resolution.value } as ProviderConfig
+  }
+  return { model, languageModel: createLanguageModel(provider, model, { user: userId }) }
+}
+
+/** Re-authorize the assistant before every Pi inference turn. */
+export async function resolveAuthorizedPiSessionModel(record: SessionRecord) {
+  const conversation = await getConversationWithBackendAssistant(record.conversationId)
+  if (!conversation || conversation.conversation.ownerId !== record.userId ||
+      conversation.assistant.deleted !== 0 ||
+      !(await canUserAccessAssistant(record.userId, conversation.conversation.assistantId))) {
+    throw new Error('Pi conversation or assistant is no longer authorized')
+  }
+  const selection = decodePiModelSelection(record.modelRef)
+  if (selection.backendId !== conversation.backend.id ||
+      selection.modelId !== conversation.assistant.model) {
+    throw new Error('Assistant model configuration has changed; start a fresh Pi session')
+  }
+  return resolvePiLanguageModel(selection, record.userId)
 }
