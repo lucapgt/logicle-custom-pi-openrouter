@@ -2,6 +2,7 @@ import type { LanguageModelV3 } from '@ai-sdk/provider'
 import { getBackend, getModelsForBackend } from '@/models/backend'
 import { createLanguageModel } from '@/lib/chat/provider-factory'
 import type { LlmModel } from '@/lib/chat/models'
+import type { ProviderConfig } from '@/types/provider'
 
 /**
  * Reference stored in PiSession.modelRef. Never contains provider credentials.
@@ -40,5 +41,5 @@ export async function resolvePiLanguageModel(
   if (model.capabilities?.function_calling === false) {
     throw new Error('Selected Pi model does not support tool calling')
   }
-  return { model, languageModel: createLanguageModel(backend, model, { user: userId }) }
+  return { model, languageModel: createLanguageModel(backend as ProviderConfig, model, { user: userId }) }
 }
