@@ -32,6 +32,11 @@ const canUserAccessAssistant = vi.fn()
 vi.mock('@/models/assistant', () => ({ assistantVersionFiles: vi.fn(), canUserAccessAssistant }))
 vi.mock('@/models/message', () => ({ getMessages: vi.fn(), saveMessage: vi.fn() }))
 vi.mock('@/models/userSecrets', () => ({ getUserSecretValue: vi.fn() }))
+vi.mock('@/lib/satellite/pi-session-store', () => ({
+  DatabasePiSessionStore: class {
+    getSessionForConversation = vi.fn().mockResolvedValue(null)
+  },
+}))
 vi.mock('db/database', () => ({ db: {} }))
 vi.mock('@/backend/lib/chat', () => ({ ChatAssistant: { build: vi.fn() } }))
 vi.mock('@/backend/lib/chat/compression-planner', () => ({ warmCompressionCache: vi.fn() }))
