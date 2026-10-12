@@ -2,6 +2,18 @@ import { db } from 'db/database'
 import type { PiSessionStore, SessionEvent, SessionRecord } from './pi-session-controller'
 
 export class DatabasePiSessionStore implements PiSessionStore {
+  /** Find an existing Pi binding for an owned Logicle conversation. */
+  async getSessionForConversation(userId: string, conversationId: string): Promise<SessionRecord | null> {
+    const row = await db.selectFrom('PiSession as p')
+      .innerJoin('Conversation as c', 'c.id', 'p.conversationId')
+      .select(['p.sessionId','p.userId','p.conversationId','p.satelliteId','p.modelRef','p.lastSeq'])
+      .where('p.conversationId', '=', conversationId)
+      .where('p.userId', '=', userId)
+      .where('c.ownerId', '=', userId)
+      .executeTakeFirst()
+    return row ?? null
+  }
+
   /** Read stored events only after checking session and conversation ownership. */
   async listEvents(userId: string, sessionId: string, afterSeq = 0, limit = 100): Promise<SessionEvent[] | null> {
     if (!Number.isSafeInteger(afterSeq) || afterSeq < 0 ||
