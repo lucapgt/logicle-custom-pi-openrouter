@@ -16,6 +16,7 @@ import { useTokenRateLimit } from '@/components/providers/tokenRateLimitContext'
 import { TokenRateLimitBanner } from './TokenRateLimitBanner'
 import { Chat } from './Chat'
 import { ChatHeader } from './ChatHeader'
+import PiRuntimePage from './PiRuntimePage'
 import env from '@/lib/env'
 
 // /chat and /chat/[chatId] both render this single component (see page.tsx
@@ -154,6 +155,21 @@ const ExistingChat = ({ chatId }: { chatId: string }) => {
     state: { selectedConversation },
     loadConversation,
   } = useContext(ChatPageContext)
+  const [isPiConversation, setIsPiConversation] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setIsPiConversation(null)
+    fetch(`/api/pi/conversations/${encodeURIComponent(chatId)}/session`, {
+      credentials: 'same-origin',
+    }).then(async response => {
+      if (response.status === 404) return false
+      if (!response.ok) throw new Error('Unable to check Pi conversation mode')
+      return true
+    }).then(value => { if (!cancelled) setIsPiConversation(value) })
+      .catch(() => { if (!cancelled) setIsPiConversation(false) })
+    return () => { cancelled = true }
+  }, [chatId])
 
   useEffect(() => {
     if (selectedConversation?.id !== chatId) {
@@ -178,7 +194,11 @@ const ExistingChat = ({ chatId }: { chatId: string }) => {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <ChatHeader assistant={assistant} />
-      <Chat assistant={assistant} className="flex-1" supportedMedia={assistant.supportedMedia} />
+      {isPiConversation ? (
+        <PiRuntimePage conversationIdOverride={chatId} />
+      ) : isPiConversation === false ? (
+        <Chat assistant={assistant} className="flex-1" supportedMedia={assistant.supportedMedia} />
+      ) : null}
     </div>
   )
 }
