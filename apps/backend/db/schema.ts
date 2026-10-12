@@ -432,6 +432,24 @@ export interface KnowledgeProjection {
   updatedAt: string
 }
 
+export interface PiSession {
+  sessionId: string
+  userId: string
+  conversationId: string
+  satelliteId: string
+  modelRef: string
+  lastSeq: number
+  createdAt: string
+}
+
+export interface PiSessionEvent {
+  sessionId: string
+  seq: number
+  kind: string
+  payload: string
+  createdAt: string
+}
+
 export interface DB {
   Account: Account
   ApiKey: ApiKey
@@ -466,6 +484,8 @@ export interface DB {
   Prompt: Prompt
   Property: Property
   Satellite: Satellite
+  PiSession: PiSession
+  PiSessionEvent: PiSessionEvent
   Session: Session
   CompressedMessage: CompressedMessage
   Workspace: Workspace
