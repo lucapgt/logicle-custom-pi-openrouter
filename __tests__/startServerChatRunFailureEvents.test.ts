@@ -43,6 +43,11 @@ vi.mock('@/models/assistant', () => ({
 }))
 vi.mock('@/models/message', () => ({ getMessages: vi.fn().mockResolvedValue([]), saveMessage }))
 vi.mock('@/models/userSecrets', () => ({ getUserSecretValue: vi.fn() }))
+vi.mock('@/lib/satellite/pi-session-store', () => ({
+  DatabasePiSessionStore: class {
+    getSessionForConversation = vi.fn().mockResolvedValue(null)
+  },
+}))
 vi.mock('db/database', () => ({ db: {} }))
 vi.mock('@/backend/lib/chat', () => ({ ChatAssistant: { build: chatAssistantBuild } }))
 vi.mock('@/backend/lib/chat/compression-planner', () => ({ warmCompressionCache: vi.fn() }))
