@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { operation, ok, notFound, conflict, responseSpec, errorSpec } from '@/lib/routes'
-import { getConversation } from '@/models/conversation'
+import { getConversationWithBackendAssistant } from '@/models/conversation'
+import { canUserAccessAssistant } from '@/models/assistant'
 import { getSatellite } from '@/models/satellite'
 import { piSessionHub, connections } from '@/lib/satellite/hub'
 import { encodePiModelSelection, resolvePiLanguageModel } from '@/lib/satellite/pi-model-resolution'
@@ -8,8 +9,6 @@ import { encodePiModelSelection, resolvePiLanguageModel } from '@/lib/satellite/
 const input = z.object({
   conversationId: z.string().min(1),
   satelliteId: z.string().min(1),
-  backendId: z.string().min(1),
-  modelId: z.string().min(1),
 })
 const output = z.object({ sessionId: z.string(), conversationId: z.string() })
 
@@ -25,10 +24,12 @@ export const POST = operation({
   responses: [responseSpec(200, output), errorSpec(404), errorSpec(409)] as const,
   implementation: async ({ session, body }) => {
     const [conversation, satellite] = await Promise.all([
-      getConversation(body.conversationId),
+      getConversationWithBackendAssistant(body.conversationId),
       getSatellite(body.satelliteId),
     ])
-    if (!conversation || conversation.ownerId !== session.userId ||
+    if (!conversation || conversation.conversation.ownerId !== session.userId ||
+        conversation.assistant.deleted !== 0 ||
+        !(await canUserAccessAssistant(session.userId, conversation.conversation.assistantId)) ||
         !satellite || satellite.userId !== session.userId) return notFound()
 
     const live = connections.get(body.satelliteId)
@@ -38,8 +39,12 @@ export const POST = operation({
     }
 
     // Never accept credentials, endpoint URLs, or model definitions from the client.
-    await resolvePiLanguageModel({ backendId: body.backendId, modelId: body.modelId }, session.userId)
-    const modelRef = encodePiModelSelection({ backendId: body.backendId, modelId: body.modelId })
+    const selection = {
+      backendId: conversation.backend.id,
+      modelId: conversation.assistant.model,
+    }
+    await resolvePiLanguageModel(selection, session.userId)
+    const modelRef = encodePiModelSelection(selection)
     const created = await piSessionHub.controller.start({
       conversationId: body.conversationId,
       satelliteId: body.satelliteId,
