@@ -1,0 +1,26 @@
+import { z } from 'zod'
+import { operation, ok, notFound, conflict, responseSpec, errorSpec } from '@/lib/routes'
+import { DatabasePiSessionStore } from '@/lib/satellite/pi-session-store'
+import { v4ControlRequest } from '@/backend/lib/pi-v4/control-client'
+
+const event = z.object({
+  seq: z.number().int().nonnegative(), sessionId: z.string(), turnId: z.string().optional(),
+  kind: z.string(), payload: z.unknown().optional(), emittedAt: z.string(),
+})
+const output = z.object({ events: z.array(event) })
+export const GET = operation({
+  name: 'Replay Pi Native V4 timeline',
+  authentication: 'user',
+  querySchema: z.object({ after: z.coerce.number().int().min(0).default(0) }),
+  responses: [responseSpec(200, output), errorSpec(404), errorSpec(409)] as const,
+  implementation: async ({ session, params, query }) => {
+    const owned = await new DatabasePiSessionStore().getSession(session.userId, params.sessionId)
+    if (!owned) return notFound()
+    try {
+      const data = await v4ControlRequest(owned.sessionId, 'events', { after: query.after })
+      return ok(output.parse(data))
+    } catch {
+      return conflict('V4 event service unavailable')
+    }
+  },
+})

@@ -86,6 +86,10 @@ export const router = createBrowserRouter([
             ...named('ChatSection')(() => import('@/app/chat/components/ChatSection')),
           },
           {
+            path: 'pi-v4/:sessionId',
+            ...page(() => import('@/app/chat/components/PiV4RuntimePage')),
+          },
+          {
             path: 'pi/:conversationId',
             ...page(() => import('@/app/chat/components/PiRuntimePage')),
           },
