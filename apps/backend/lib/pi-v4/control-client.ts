@@ -1,25 +1,38 @@
-/** Backend-only bridge: never expose V4_CONTROL_UI_TOKEN or provider secrets to the browser. */
+/**
+ * Internal Logicle -> V4 control bridge.
+ * Explicit single-session grant until a per-user/session grant issuer is implemented.
+ * Secrets never transit through frontend route payloads.
+ */
 export function v4ControlConfig(env: NodeJS.ProcessEnv = process.env) {
   const raw = env.V4_CONTROL_INTERNAL_URL
   const token = env.V4_CONTROL_UI_TOKEN
   const sessionId = env.V4_CONTROL_SESSION_ID
   if (!raw || !token || token.length < 32 || !sessionId) throw new Error('V4 control unavailable')
   const url = new URL(raw)
-  if (url.username || url.password || url.search || url.hash || (url.pathname !== '/' && url.pathname !== '') ||
+  if (url.username || url.password || url.search || url.hash ||
+      (url.pathname !== '/' && url.pathname !== '') ||
       !['http:', 'https:'].includes(url.protocol)) throw new Error('Invalid V4 control origin')
-  if (!['v4-control', '127.0.0.1', 'localhost'].includes(url.hostname)) throw new Error('Untrusted V4 control host')
+  if (!['v4-control', '127.0.0.1', 'localhost'].includes(url.hostname))
+    throw new Error('Untrusted V4 control host')
+  // Plaintext is only permitted for the explicitly named internal Docker service or loopback.
+  if (url.protocol === 'http:' && !['v4-control', '127.0.0.1', 'localhost'].includes(url.hostname))
+    throw new Error('V4 plaintext control transport not allowed')
   return { origin: url.origin, token, sessionId }
 }
+
 export async function v4ControlRequest(sessionId: string, path: 'turns' | 'events', options?: {
   message?: string; turnId?: string; after?: number; fetchImpl?: typeof fetch
 }): Promise<unknown> {
   const config = v4ControlConfig()
-  // Current control service is single-session. Fail closed until multi-session grants are implemented.
   if (sessionId !== config.sessionId) throw new Error('V4 session binding mismatch')
   const url = new URL('/v4/sessions/' + encodeURIComponent(sessionId) + '/' + path, config.origin)
   if (path === 'events') {
-    url.searchParams.set('after', String(options?.after ?? 0))
+    if (!Number.isSafeInteger(options?.after) || (options?.after ?? -1) < 0)
+      throw new Error('Invalid event cursor')
+    url.searchParams.set('after', String(options?.after))
     url.searchParams.set('limit', '100')
+  } else if (!options?.message?.trim() || !options?.turnId) {
+    throw new Error('Missing idempotent V4 turn')
   }
   const response = await (options?.fetchImpl ?? fetch)(url.toString(), {
     method: path === 'turns' ? 'POST' : 'GET',
@@ -29,6 +42,10 @@ export async function v4ControlRequest(sessionId: string, path: 'turns' | 'event
     signal: AbortSignal.timeout(15_000),
     cache: 'no-store',
   })
-  if (response.status !== (path === 'turns' ? 202 : 200)) throw new Error('V4 control HTTP ' + response.status)
+  if (response.status !== (path === 'turns' ? 202 : 200))
+    throw new Error('V4 control HTTP ' + response.status)
+  const contentType = response.headers.get('content-type') ?? ''
+  if (!contentType.toLowerCase().includes('application/json'))
+    throw new Error('Unexpected V4 control response media type')
   return response.json()
 }
