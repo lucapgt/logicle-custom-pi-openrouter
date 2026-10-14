@@ -57,19 +57,21 @@ export const Chat = ({
   const [v4Available, setV4Available] = useState(false)
   const [activating, setActivating] = useState(false)
   const [activationError, setActivationError] = useState('')
+  const [modeError, setModeError] = useState(false)
   useEffect(() => {
     const conversationId = selectedConversation?.id
     if (!conversationId) { setPiV4Session(null); return }
     let cancelled = false
     setPiV4Session(null)
     setV4Available(false)
+    setModeError(false)
     setModeLoading(true)
     void fetch('/api/pi-v4/conversations/' + encodeURIComponent(conversationId) + '/binding', { credentials:'same-origin',cache:'no-store' })
       .then(r => {if(!r.ok) throw Error('Binding lookup failed');return r.json()})
       .then((data: { mode: string; sessionId: string|null; available: boolean }) => {
         if(!cancelled) {setPiV4Session(data.mode==='pi-v4'?data.sessionId:null);setV4Available(data.available)}
       })
-      .catch(()=>{if(!cancelled) setPiV4Session(null)})
+      .catch(()=>{if(!cancelled) {setPiV4Session(null); setModeError(true)}})
       .finally(()=>{if(!cancelled) setModeLoading(false)})
     return ()=>{cancelled=true}
   },[selectedConversation?.id])
@@ -227,7 +229,7 @@ export const Chat = ({
           )}
           {activationError && <p role="alert" className="text-red-600">{activationError}</p>}
         </div>
-        {modeLoading ? <p role="status" className="p-3 text-sm">Verifica modalità della conversazione...</p> : piV4Session ? <PiV4InlineChat sessionId={piV4Session} conversationId={selectedConversation.id} /> : <ChatInputOrApiKey
+        {modeLoading ? <p role="status" className="p-3 text-sm">Verifica modalità della conversazione...</p> : modeError ? <p role="alert" className="p-3 text-sm">Impossibile verificare la modalità della conversazione. Riapri la chat prima di inviare altri messaggi.</p> : piV4Session ? <PiV4InlineChat sessionId={piV4Session} conversationId={selectedConversation.id} /> : <ChatInputOrApiKey
           assistant={assistant}
           chatInput={chatInput}
           setChatInput={setChatInput}
