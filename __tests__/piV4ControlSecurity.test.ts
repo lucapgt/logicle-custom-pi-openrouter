@@ -42,10 +42,10 @@ describe('V4 backend control trust boundary', () => {
   })
   it('rejects redirects and never forwards the secret to a redirect destination', async () => {
     setup()
-    const fetchImpl = vi.fn(async () => new Response(null, { status: 302, headers: { location: 'https://evil.example' } }))
+    const fetchImpl = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(null, { status: 302, headers: { location: 'https://evil.example' } }))
     await expect(v4ControlRequest('sess-v4', 'turns', {turnId: 'id',message: 'test',fetchImpl})).rejects.toThrow()
     expect(fetchImpl).toHaveBeenCalledTimes(1)
-    expect(fetchImpl.mock.calls[0][1].redirect).toBe('manual')
+    expect(fetchImpl.mock.calls[0]?.[1]?.redirect).toBe('manual')
   })
   it('requires JSON responses and finite replay cursors', async () => {
     setup()
