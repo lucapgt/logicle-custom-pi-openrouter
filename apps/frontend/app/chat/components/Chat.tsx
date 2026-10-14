@@ -54,21 +54,50 @@ export const Chat = ({
   const [chatInput, setChatInput] = useChatInput(selectedConversation?.id ?? '')
   const [piV4Session, setPiV4Session] = useState<string | null>(null)
   const [modeLoading, setModeLoading] = useState(false)
+  const [v4Available, setV4Available] = useState(false)
+  const [activating, setActivating] = useState(false)
+  const [activationError, setActivationError] = useState('')
   useEffect(() => {
     const conversationId = selectedConversation?.id
     if (!conversationId) { setPiV4Session(null); return }
     let cancelled = false
     setPiV4Session(null)
+    setV4Available(false)
     setModeLoading(true)
     void fetch('/api/pi-v4/conversations/' + encodeURIComponent(conversationId) + '/binding', { credentials:'same-origin',cache:'no-store' })
       .then(r => {if(!r.ok) throw Error('Binding lookup failed');return r.json()})
-      .then((data: { mode: string; sessionId: string|null }) => {
-        if(!cancelled) setPiV4Session(data.mode==='pi-v4'?data.sessionId:null)
+      .then((data: { mode: string; sessionId: string|null; available: boolean }) => {
+        if(!cancelled) {setPiV4Session(data.mode==='pi-v4'?data.sessionId:null);setV4Available(data.available)}
       })
       .catch(()=>{if(!cancelled) setPiV4Session(null)})
       .finally(()=>{if(!cancelled) setModeLoading(false)})
     return ()=>{cancelled=true}
   },[selectedConversation?.id])
+  const activatePiV4 = async () => {
+    const conversationId = selectedConversation?.id
+    if (!conversationId || activating || !v4Available || piV4Session) return
+    setActivating(true)
+    setActivationError('')
+    try {
+      const list = await fetch('/api/pi-v4/satellites', { credentials: 'same-origin' })
+      if (!list.ok) throw Error('Unable to list your satellites')
+      const data = await list.json() as { satellites: Array<{ id: string; name: string }> }
+      if (!data.satellites.length) throw Error('No satellite registered for this user')
+      const satellite = data.satellites.length === 1 ? data.satellites[0] :
+        data.satellites.find(s => window.confirm('Selezionare il satellite ' + s.name + '?'))
+      if (!satellite) return
+      if (!window.confirm('Collegare questa conversazione alla sessione Pi V4 gia predisposta? Lo storico precedente restera in Logicle ma non sara importato nel contesto Pi.')) return
+      const r = await fetch('/api/pi-v4/conversations/' + encodeURIComponent(conversationId) + '/binding', {
+        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ satelliteId: satellite.id }),
+      })
+      if (!r.ok) throw Error('Pi activation HTTP ' + r.status)
+      const result = await r.json() as { sessionId: string|null; mode: string }
+      if (result.mode !== 'pi-v4' || !result.sessionId) throw Error('Invalid V4 mode response')
+      setPiV4Session(result.sessionId)
+    } catch(error) { setActivationError(String(error)) }
+    finally { setActivating(false) }
+  }
   const [autoScrollEnabled, setAutoScrollEnabled] = useState<boolean>(true)
   const [showScrollDownButton, setShowScrollDownButton] = useState<boolean>(false)
 
@@ -190,6 +219,13 @@ export const Chat = ({
         </ScrollArea>
         <div className="mx-auto w-full max-w-[var(--thread-content-max-width)] px-3 py-2 text-sm" aria-live="polite">
           Modalità: {modeLoading ? 'verifica...' : piV4Session ? 'Pi Native V4 (sessione associata)' : 'Assistente Logicle'}
+          {!modeLoading && v4Available && !piV4Session && (
+            <button type="button" disabled={activating} className="ml-3 rounded border px-3 py-1"
+              onClick={() => void activatePiV4()}>
+              {activating ? 'Attivazione...' : 'Converti in Pi Native V4'}
+            </button>
+          )}
+          {activationError && <p role="alert" className="text-red-600">{activationError}</p>}
         </div>
         {piV4Session ? <PiV4InlineChat sessionId={piV4Session} conversationId={selectedConversation.id} /> : <ChatInputOrApiKey
           assistant={assistant}
