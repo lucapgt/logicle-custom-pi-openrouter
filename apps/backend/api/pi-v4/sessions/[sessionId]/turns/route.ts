@@ -4,7 +4,7 @@ import { operation, ok, notFound, conflict, responseSpec, errorSpec } from '@/li
 import { DatabasePiSessionStore } from '@/lib/satellite/pi-session-store'
 import { v4ControlRequest } from '@/backend/lib/pi-v4/control-client'
 
-const input = z.object({ text: z.string().trim().min(1).max(60000), turnId: z.string().uuid().optional() })
+const input = z.object({ text: z.string().trim().min(1).max(32768), turnId: z.string().uuid().optional() })
 const output = z.object({ accepted: z.literal(true), turnId: z.string().uuid(), status: z.literal('queued') })
 
 /** Require browser writes to originate from the same origin; do not trust a client Origin as a control origin. */
@@ -22,6 +22,8 @@ export const POST = operation({
     if (!validBrowserOrigin(headers, url)) return conflict('Invalid request origin')
     const owned = await new DatabasePiSessionStore().getSession(session.userId, params.sessionId)
     if (!owned) return notFound()
+    // The Go V4 control server enforces 32768 UTF-8 bytes, not Unicode characters.
+    if (Buffer.byteLength(body.text, 'utf8') > 32768) return conflict('Prompt exceeds V4 control byte limit')
     const turnId = body.turnId ?? randomUUID()
     try {
       await v4ControlRequest(owned.sessionId, 'turns', { turnId, message: body.text })
