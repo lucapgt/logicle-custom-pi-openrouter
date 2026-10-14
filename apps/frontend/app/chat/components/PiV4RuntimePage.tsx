@@ -50,7 +50,7 @@ export default function PiV4RuntimePage() {
           for (const item of data.events) unique.set(item.seq, item)
           return [...unique.values()].sort((a, b) => a.seq - b.seq)
         })
-        for (const event of data.events) {
+        for (const event of [...data.events].sort((a, b) => a.seq - b.seq)) {
           cursor.current = Math.max(cursor.current, event.seq)
           if (event.turnId && event.turnId === pendingRef.current && terminal.has(event.kind)) {
             pendingRef.current = null

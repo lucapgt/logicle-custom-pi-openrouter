@@ -16,7 +16,9 @@ function validBrowserOrigin(headers: Headers, url: URL): boolean {
 
 export const POST = operation({
   name: 'Queue Pi Native V4 turn',
-  authentication: 'user', requestBodySchema: input,
+  authentication: 'user',
+  preventCrossSite: true,
+  requestBodySchema: input,
   responses: [responseSpec(200, output), errorSpec(404), errorSpec(409)] as const,
   implementation: async ({ session, params, body, headers, url }) => {
     if (!validBrowserOrigin(headers, url)) return conflict('Invalid request origin')
