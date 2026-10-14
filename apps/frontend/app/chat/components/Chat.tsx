@@ -88,7 +88,7 @@ export const Chat = ({
       const satellite = data.satellites.length === 1 ? data.satellites[0] :
         data.satellites.find(s => window.confirm('Selezionare il satellite ' + s.name + '?'))
       if (!satellite) return
-      if (!window.confirm('Collegare questa conversazione alla sessione Pi V4 gia predisposta? Lo storico precedente restera in Logicle ma non sara importato nel contesto Pi.')) return
+      if (!window.confirm('Creare una nuova sessione Pi Native V4 per questa conversazione? Lo storico precedente restera in Logicle ma non sara importato nel contesto Pi.')) return
       const r = await fetch('/api/pi-v4/conversations/' + encodeURIComponent(conversationId) + '/binding', {
         method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ satelliteId: satellite.id }),

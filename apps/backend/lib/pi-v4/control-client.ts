@@ -7,7 +7,7 @@ export function v4ControlConfig(env: NodeJS.ProcessEnv = process.env) {
   const raw = env.V4_CONTROL_INTERNAL_URL
   const token = env.V4_CONTROL_UI_TOKEN
   const sessionId = env.V4_CONTROL_SESSION_ID
-  if (!raw || !token || token.length < 32 || !sessionId) throw new Error('V4 control unavailable')
+  if (!raw || !token || token.length < 32) throw new Error('V4 control unavailable')
   const url = new URL(raw)
   if (url.username || url.password || url.search || url.hash ||
       (url.pathname !== '/' && url.pathname !== '') ||
@@ -24,7 +24,7 @@ export async function v4ControlRequest(sessionId: string, path: 'turns' | 'event
   message?: string; turnId?: string; after?: number; fetchImpl?: typeof fetch
 }): Promise<unknown> {
   const config = v4ControlConfig()
-  if (sessionId !== config.sessionId) throw new Error('V4 session binding mismatch')
+  if (config.sessionId && sessionId !== config.sessionId) throw new Error('V4 session binding mismatch')
   const url = new URL('/v4/sessions/' + encodeURIComponent(sessionId) + '/' + path, config.origin)
   if (path === 'events') {
     if (!Number.isSafeInteger(options?.after) || (options?.after ?? -1) < 0)
@@ -48,4 +48,27 @@ export async function v4ControlRequest(sessionId: string, path: 'turns' | 'event
   if (!contentType.toLowerCase().includes('application/json'))
     throw new Error('Unexpected V4 control response media type')
   return response.json()
+}
+
+/**
+ * Create a new native Pi session in the V4 control plane before persisting a
+ * Logicle binding. This is an explicit REQUIRED satellite/control-plane API.
+ * A 404/501 is an error: never claim that a session was created.
+ */
+export async function v4CreateNativeSession(sessionId: string, conversationId: string): Promise<void> {
+  const config = v4ControlConfig()
+  const url = new URL('/v4/sessions', config.origin)
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + config.token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, conversationId }),
+    redirect: 'manual',
+    signal: AbortSignal.timeout(15_000),
+    cache: 'no-store',
+  })
+  if (response.status !== 201) throw new Error('V4 native session creation not confirmed')
+  if (!(response.headers.get('content-type') ?? '').includes('application/json')) throw new Error('Invalid native session creation response')
+  const data: unknown = await response.json()
+  if (!data || typeof data !== 'object' || (data as { sessionId?: unknown }).sessionId !== sessionId)
+    throw new Error('V4 native session response mismatch')
 }
