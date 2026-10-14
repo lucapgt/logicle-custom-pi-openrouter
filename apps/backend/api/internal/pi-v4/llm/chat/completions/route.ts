@@ -8,7 +8,7 @@ import * as ai from 'ai'
 import { db } from 'db/database'
 import { getConversationWithBackendAssistant } from '@/models/conversation'
 import { getBackend, getModelsForBackend } from '@/models/backend'
-import { createLanguageModel } from '@/lib/chat/provider-factory'
+import { createLanguageModel } from '@/backend/lib/chat/provider-factory'
 
 export const runtime = 'nodejs'
 
