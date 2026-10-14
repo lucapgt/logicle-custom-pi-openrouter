@@ -94,6 +94,7 @@ export const backendRouteModules = [
   { pathname: '/api/pi/sessions/[sessionId]', load: () => import('@/backend/api/pi/sessions/[sessionId]/route') },
   { pathname: '/api/pi/sessions/[sessionId]/stream', load: () => import('@/backend/api/pi/sessions/[sessionId]/stream/route') },
   { pathname: '/api/pi/sessions', load: () => import('@/backend/api/pi/sessions/route') },
+  { pathname: '/api/pi-v4/conversations/[conversationId]/binding', load: () => import('@/backend/api/pi-v4/conversations/[conversationId]/binding/route') },
   { pathname: '/api/pi-v4/sessions/[sessionId]/events', load: () => import('@/backend/api/pi-v4/sessions/[sessionId]/events/route') },
   { pathname: '/api/pi-v4/sessions/[sessionId]/turns', load: () => import('@/backend/api/pi-v4/sessions/[sessionId]/turns/route') },
   { pathname: '/api/satellites/[id]', load: () => import('@/backend/api/satellites/[id]/route') },

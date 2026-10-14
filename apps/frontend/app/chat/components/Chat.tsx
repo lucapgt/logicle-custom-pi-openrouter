@@ -16,6 +16,7 @@ import { TokenRateLimitBanner } from './TokenRateLimitBanner'
 import { MessageLimitBanner } from './MessageLimitBanner'
 import { useEnvironment } from '@/app/context/environmentProvider'
 import { useLayoutConfig } from '@/components/providers/layoutconfigContext'
+import { PiV4InlineChat } from './PiV4InlineChat'
 
 export interface ChatProps {
   assistant: dto.AssistantIdentification & {
@@ -51,6 +52,23 @@ export const Chat = ({
   const { t } = useTranslation()
 
   const [chatInput, setChatInput] = useChatInput(selectedConversation?.id ?? '')
+  const [piV4Session, setPiV4Session] = useState<string | null>(null)
+  const [modeLoading, setModeLoading] = useState(false)
+  useEffect(() => {
+    const conversationId = selectedConversation?.id
+    if (!conversationId) { setPiV4Session(null); return }
+    let cancelled = false
+    setPiV4Session(null)
+    setModeLoading(true)
+    void fetch('/api/pi-v4/conversations/' + encodeURIComponent(conversationId) + '/binding', { credentials:'same-origin',cache:'no-store' })
+      .then(r => {if(!r.ok) throw Error('Binding lookup failed');return r.json()})
+      .then((data: { mode: string; sessionId: string|null }) => {
+        if(!cancelled) setPiV4Session(data.mode==='pi-v4'?data.sessionId:null)
+      })
+      .catch(()=>{if(!cancelled) setPiV4Session(null)})
+      .finally(()=>{if(!cancelled) setModeLoading(false)})
+    return ()=>{cancelled=true}
+  },[selectedConversation?.id])
   const [autoScrollEnabled, setAutoScrollEnabled] = useState<boolean>(true)
   const [showScrollDownButton, setShowScrollDownButton] = useState<boolean>(false)
 
@@ -170,7 +188,10 @@ export const Chat = ({
             </div>
           )}
         </ScrollArea>
-        <ChatInputOrApiKey
+        <div className="mx-auto w-full max-w-[var(--thread-content-max-width)] px-3 py-2 text-sm" aria-live="polite">
+          Modalità: {modeLoading ? 'verifica...' : piV4Session ? 'Pi Native V4 (sessione associata)' : 'Assistente Logicle'}
+        </div>
+        {piV4Session ? <PiV4InlineChat sessionId={piV4Session} conversationId={selectedConversation.id} /> : <ChatInputOrApiKey
           assistant={assistant}
           chatInput={chatInput}
           setChatInput={setChatInput}
@@ -192,7 +213,7 @@ export const Chat = ({
               msg: { role: 'user', content, attachments },
             })
           }}
-        />
+        />}
         {(hardMessageLimitReached || softMessageLimitReached) && (
           <MessageLimitBanner
             variant={hardMessageLimitReached ? 'block' : 'warning'}
