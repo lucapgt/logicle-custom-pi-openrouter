@@ -2,6 +2,7 @@
 // Do not edit it by hand.
 
 export const backendRouteModules = [
+  { pathname: '/api/internal/pi-v4/llm/chat/completions', load: () => import('@/backend/api/internal/pi-v4/llm/chat/completions/route') },
   { pathname: '/api/analytics/activity/byassistant', load: () => import('@/backend/api/analytics/activity/byassistant/route') },
   { pathname: '/api/analytics/activity/byuser', load: () => import('@/backend/api/analytics/activity/byuser/route') },
   { pathname: '/api/analytics/activity', load: () => import('@/backend/api/analytics/activity/route') },
