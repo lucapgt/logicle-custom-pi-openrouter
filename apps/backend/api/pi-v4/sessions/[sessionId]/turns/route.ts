@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { operation, ok, notFound, conflict, responseSpec, errorSpec } from '@/lib/routes'
 import { DatabasePiSessionStore } from '@/lib/satellite/pi-session-store'
 import { v4ControlRequest } from '@/backend/lib/pi-v4/control-client'
+import { ensureV4UserMessage } from '@/backend/lib/pi-v4/history-projection'
 
 const input = z.object({ text: z.string().trim().min(1).max(32768), turnId: z.string().uuid() })
 const output = z.object({ accepted: z.literal(true), turnId: z.string().uuid(), status: z.literal('queued') })
@@ -27,6 +28,7 @@ export const POST = operation({
     if (Buffer.byteLength(body.text, 'utf8') > 32768) return conflict('Prompt exceeds V4 control byte limit')
     const turnId = body.turnId
     try {
+      await ensureV4UserMessage(owned.conversationId, turnId, body.text)
       await v4ControlRequest(owned.sessionId, 'turns', { turnId, message: body.text })
       return ok({ accepted: true as const, turnId, status: 'queued' as const })
     } catch {

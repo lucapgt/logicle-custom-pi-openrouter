@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { operation, ok, notFound, conflict, responseSpec, errorSpec } from '@/lib/routes'
 import { DatabasePiSessionStore } from '@/lib/satellite/pi-session-store'
 import { v4ControlRequest } from '@/backend/lib/pi-v4/control-client'
+import { projectV4TerminalEvent } from '@/backend/lib/pi-v4/history-projection'
 
 const event = z.object({
   seq: z.number().int().nonnegative(),
@@ -27,6 +28,9 @@ export const GET = operation({
       // The upstream control plane is a separate trust boundary: don't leak events for another session.
       if (parsed.events.some(item => item.sessionId !== owned.sessionId || item.seq <= query.after))
         return conflict('Invalid V4 event replay')
+      for (const item of [...parsed.events].sort((a,b) => a.seq - b.seq)) {
+        await projectV4TerminalEvent(owned.conversationId, item)
+      }
       return ok(parsed)
     } catch {
       return conflict('V4 event service unavailable')
