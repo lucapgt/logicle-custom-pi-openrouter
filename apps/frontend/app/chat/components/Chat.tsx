@@ -227,7 +227,7 @@ export const Chat = ({
           )}
           {activationError && <p role="alert" className="text-red-600">{activationError}</p>}
         </div>
-        {piV4Session ? <PiV4InlineChat sessionId={piV4Session} conversationId={selectedConversation.id} /> : <ChatInputOrApiKey
+        {modeLoading ? <p role="status" className="p-3 text-sm">Verifica modalità della conversazione...</p> : piV4Session ? <PiV4InlineChat sessionId={piV4Session} conversationId={selectedConversation.id} /> : <ChatInputOrApiKey
           assistant={assistant}
           chatInput={chatInput}
           setChatInput={setChatInput}
