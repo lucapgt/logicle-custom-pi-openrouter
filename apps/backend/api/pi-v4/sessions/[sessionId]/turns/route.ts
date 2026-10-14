@@ -1,10 +1,9 @@
-import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { operation, ok, notFound, conflict, responseSpec, errorSpec } from '@/lib/routes'
 import { DatabasePiSessionStore } from '@/lib/satellite/pi-session-store'
 import { v4ControlRequest } from '@/backend/lib/pi-v4/control-client'
 
-const input = z.object({ text: z.string().trim().min(1).max(32768), turnId: z.string().uuid().optional() })
+const input = z.object({ text: z.string().trim().min(1).max(32768), turnId: z.string().uuid() })
 const output = z.object({ accepted: z.literal(true), turnId: z.string().uuid(), status: z.literal('queued') })
 
 /** Require browser writes to originate from the same origin; do not trust a client Origin as a control origin. */
@@ -26,7 +25,7 @@ export const POST = operation({
     if (!owned) return notFound()
     // The Go V4 control server enforces 32768 UTF-8 bytes, not Unicode characters.
     if (Buffer.byteLength(body.text, 'utf8') > 32768) return conflict('Prompt exceeds V4 control byte limit')
-    const turnId = body.turnId ?? randomUUID()
+    const turnId = body.turnId
     try {
       await v4ControlRequest(owned.sessionId, 'turns', { turnId, message: body.text })
       return ok({ accepted: true as const, turnId, status: 'queued' as const })
