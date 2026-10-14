@@ -13,7 +13,7 @@ async function isOwned(userId: string, conversationId: string) {
   return !!conversation && conversation.conversation.ownerId === userId
 }
 function configured() {
-  try { v4ControlConfig(); return true } catch { return false }
+  try { return !v4ControlConfig().sessionId } catch { return false }
 }
 export const GET = operation({
   name: 'Resolve Pi Native V4 chat mode',
@@ -22,7 +22,7 @@ export const GET = operation({
   implementation: async ({params,session}) => {
     if (!await isOwned(session.userId,params.conversationId)) return notFound()
     const existing = await new DatabasePiSessionStore().getSessionForConversation(session.userId,params.conversationId)
-    const native = existing?.modelRef === 'pi-v4-native' && configured()
+    const native = existing?.modelRef === 'pi-v4-native'
     return ok({mode: native ? 'pi-v4' as const:'logicle' as const,sessionId:native ? existing.sessionId:null,
       available:configured() && (!existing || native)})
   },

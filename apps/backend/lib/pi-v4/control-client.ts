@@ -57,6 +57,8 @@ export async function v4ControlRequest(sessionId: string, path: 'turns' | 'event
  */
 export async function v4CreateNativeSession(sessionId: string, conversationId: string): Promise<void> {
   const config = v4ControlConfig()
+  // A legacy fixed-session grant cannot securely mint a different session.
+  if (config.sessionId) throw new Error('Dynamic native session creation requires V4_CONTROL_SESSION_ID to be unset')
   const url = new URL('/v4/sessions', config.origin)
   const response = await fetch(url, {
     method: 'POST',
